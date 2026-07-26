@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+<head><title>Auto Login</title></head>
+<body>
+<p>Logging in...</p>
+<script>
+  async function autoLogin() {
+    const email = 'admin@duha.edu.bd';
+    const password = 'password';
+    try {
+      const res = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        body: JSON.stringify({ email, password })
+      });
+      const data = await res.json();
+      if (data.token) {
+        localStorage.setItem('auth_token', data.token);
+        localStorage.setItem('user_role', data.user.role);
+        localStorage.setItem('user', JSON.stringify(data.user));
+        window.location.href = '/';
+      } else {
+        document.body.innerHTML = '<p>Login failed: ' + JSON.stringify(data) + '</p>';
+      }
+    } catch (e) {
+      document.body.innerHTML = '<p>Error: ' + e.message + '</p>';
+    }
+  }
+  autoLogin();
+</script>
+</body>
+</html>
