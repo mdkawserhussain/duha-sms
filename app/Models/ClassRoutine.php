@@ -16,6 +16,8 @@ class ClassRoutine extends Model
         'start_time',
         'end_time',
         'teacher_id',
+        'room',
+        'room_id',
     ];
 
     public function class()
@@ -31,6 +33,11 @@ class ClassRoutine extends Model
     public function teacher()
     {
         return $this->belongsTo(User::class, 'teacher_id');
+    }
+
+    public function room()
+    {
+        return $this->belongsTo(Room::class);
     }
 
     public function scopeForDay($query, $day)

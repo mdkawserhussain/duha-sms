@@ -2,12 +2,15 @@
 
 namespace App\Http\Controllers\Admin;
 
+use App\Exports\StudentExport;
 use App\Http\Controllers\Controller;
+use App\Imports\StudentImport;
 use App\Models\ClassModel;
 use App\Models\Student;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Maatwebsite\Excel\Facades\Excel;
 
 class StudentController extends Controller
 {
@@ -48,20 +51,45 @@ class StudentController extends Controller
             'dob' => 'required|date|before:today',
             'class_id' => 'required|exists:classes,id',
             'guardian_id' => 'required|exists:users,id,role,guardian',
+            'guardian_ids' => 'nullable|array',
+            'guardian_ids.*' => 'exists:users,id,role,guardian',
             'admission_date' => 'required|date',
         ]);
+
+        // Capacity guard
+        $class = ClassModel::findOrFail($validated['class_id']);
+        $currentCount = $class->students()->active()->count();
+        if ($class->capacity > 0 && $currentCount >= $class->capacity) {
+            return response()->json([
+                'message' => "Class \"{$class->name} - {$class->section}\" is full ({$currentCount}/{$class->capacity}). Transfer or remove a student first.",
+            ], 422);
+        }
 
         $validated['gender'] = $validated['gender'] === 'male' ? 'm' : 'f';
         $validated['admission_no'] = 'ADM-' . str_pad(Student::withTrashed()->max('id') + 1, 4, '0', STR_PAD_LEFT);
 
         $student = Student::create($validated);
 
-        return response()->json($student->load(['guardian', 'class']), 201);
+        // Sync guardians - primary guardian is guardian_id, additional guardians from guardian_ids
+        $guardianIds = array_unique(array_merge(
+            [$validated['guardian_id']],
+            $validated['guardian_ids'] ?? []
+        ));
+        $syncData = [];
+        foreach ($guardianIds as $id) {
+            $syncData[$id] = [
+                'relationship_type' => 'parent',
+                'is_primary' => $id == $validated['guardian_id'],
+            ];
+        }
+        $student->guardians()->sync($syncData);
+
+        return response()->json($student->load(['guardian', 'class', 'guardians']), 201);
     }
 
     public function show(Student $student): JsonResponse
     {
-        $student->load(['guardian', 'class', 'attendances', 'evaluations.subject', 'reportCards']);
+        $student->load(['guardian', 'class', 'guardians', 'attendances', 'evaluations.subject', 'reportCards']);
 
         return response()->json($student);
     }
@@ -98,5 +126,53 @@ class StudentController extends Controller
         $student->update(['status' => $newStatus]);
 
         return response()->json(['message' => "Student {$newStatus} successfully"]);
+    }
+
+    public function transfer(Request $request, Student $student): JsonResponse
+    {
+        $validated = $request->validate([
+            'class_id' => 'required|exists:classes,id',
+            'reason' => 'nullable|string|max:500',
+        ]);
+
+        if ($validated['class_id'] == $student->class_id) {
+            return response()->json(['message' => 'Student is already in this class.'], 422);
+        }
+
+        // Capacity guard on target class
+        $targetClass = ClassModel::findOrFail($validated['class_id']);
+        $currentCount = $targetClass->students()->active()->count();
+        if ($targetClass->capacity > 0 && $currentCount >= $targetClass->capacity) {
+            return response()->json([
+                'message' => "Target class \"{$targetClass->name} - {$targetClass->section}\" is full ({$currentCount}/{$targetClass->capacity}).",
+            ], 422);
+        }
+
+        $fromClass = $student->class;
+        $student->update(['class_id' => $validated['class_id']]);
+
+        return response()->json([
+            'message' => "Student transferred from \"{$fromClass->name} - {$fromClass->section}\" to \"{$targetClass->name} - {$targetClass->section}\" successfully.",
+            'student' => $student->load(['guardian', 'class']),
+        ]);
+    }
+
+    public function import(Request $request): JsonResponse
+    {
+        $request->validate([
+            'file' => 'required|file|mimes:xlsx,xls,csv|max:10240',
+        ]);
+
+        try {
+            Excel::import(new StudentImport, $request->file('file'));
+            return response()->json(['message' => 'Students imported successfully']);
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'Import failed: ' . $e->getMessage()], 422);
+        }
+    }
+
+    public function export(): \Symfony\Component\HttpFoundation\BinaryFileResponse
+    {
+        return Excel::download(new StudentExport, 'students.xlsx');
     }
 }

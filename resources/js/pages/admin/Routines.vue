@@ -26,7 +26,7 @@
           <label class="block text-sm font-medium text-gray-700 mb-1">Teacher</label>
           <select v-model="filters.teacher_id" @change="fetchRoutines" class="w-full rounded-md border-gray-300 text-sm">
             <option value="">All Teachers</option>
-            <option v-for="t in teachers" :key="t.id" :value="t.id">{{ t.first_name }} {{ t.last_name }}</option>
+            <option v-for="t in teachers" :key="t.id" :value="t.id">{{ t.name }}</option>
           </select>
         </div>
       </div>
@@ -52,8 +52,8 @@
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ r.day_of_week }}</td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ r.start_time }}</td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ r.end_time }}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ r.subject }}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ r.teacher?.first_name }} {{ r.teacher?.last_name }}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ r.subject?.name }}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ r.teacher?.name }}</td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ r.room || '-' }}</td>
             <td class="px-6 py-4 whitespace-nowrap text-sm">
               <button @click="openModal(r)" class="text-indigo-600 hover:text-indigo-900 mr-3">Edit</button>
@@ -81,8 +81,8 @@
               <div><label class="block text-sm font-medium text-gray-700 mb-1">End Time</label><input type="time" v-model="form.end_time" required class="w-full rounded-md border-gray-300 text-sm" /></div>
             </div>
             <div class="grid grid-cols-2 gap-4">
-              <div><label class="block text-sm font-medium text-gray-700 mb-1">Subject</label><input v-model="form.subject" required class="w-full rounded-md border-gray-300 text-sm" /></div>
-              <div><label class="block text-sm font-medium text-gray-700 mb-1">Teacher</label><select v-model="form.teacher_id" required class="w-full rounded-md border-gray-300 text-sm"><option value="">Select...</option><option v-for="t in teachers" :key="t.id" :value="t.id">{{ t.first_name }} {{ t.last_name }}</option></select></div>
+              <div><label class="block text-sm font-medium text-gray-700 mb-1">Subject</label><select v-model="form.subject_id" required class="w-full rounded-md border-gray-300 text-sm"><option value="">Select...</option><option v-for="s in subjects" :key="s.id" :value="s.id">{{ s.name }}</option></select></div>
+              <div><label class="block text-sm font-medium text-gray-700 mb-1">Teacher</label><select v-model="form.teacher_id" required class="w-full rounded-md border-gray-300 text-sm"><option value="">Select...</option><option v-for="t in teachers" :key="t.id" :value="t.id">{{ t.name }}</option></select></div>
             </div>
             <div><label class="block text-sm font-medium text-gray-700 mb-1">Room</label><input v-model="form.room" class="w-full rounded-md border-gray-300 text-sm" /></div>
           </div>
@@ -103,15 +103,17 @@ import api from '../../services/api';
 const routines = ref([]);
 const classes = ref([]);
 const teachers = ref([]);
+const subjects = ref([]);
 const showModal = ref(false);
 const editing = ref(null);
 const saving = ref(false);
 const filters = ref({ class_id: '', day: '', teacher_id: '' });
 const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-const form = ref({ class_id: '', day_of_week: 'Sunday', start_time: '', end_time: '', subject: '', teacher_id: '', room: '' });
+const form = ref({ class_id: '', day_of_week: 'Sunday', start_time: '', end_time: '', subject_id: '', teacher_id: '', room: '' });
 
 const fetchClasses = async () => { try { const r = await api.get('/admin/classes', { params: { per_page: 100 } }); classes.value = r.data.data || r.data; } catch (e) { console.error(e); } };
 const fetchTeachers = async () => { try { const r = await api.get('/admin/teachers', { params: { per_page: 200 } }); teachers.value = r.data.data || r.data; } catch (e) { console.error(e); } };
+const fetchSubjects = async () => { try { const r = await api.get('/admin/subjects', { params: { per_page: 200 } }); subjects.value = r.data.data || r.data; } catch (e) { console.error(e); } };
 const fetchRoutines = async () => {
   try {
     const params = {}; Object.entries(filters.value).forEach(([k, v]) => { if (v) params[k] = v; });
@@ -120,8 +122,8 @@ const fetchRoutines = async () => {
   } catch (e) { console.error(e); }
 };
 const openModal = (r = null) => {
-  if (r) { editing.value = r.id; form.value = { class_id: r.class_id, day_of_week: r.day_of_week, start_time: r.start_time, end_time: r.end_time, subject: r.subject, teacher_id: r.teacher_id, room: r.room || '' }; }
-  else { editing.value = null; form.value = { class_id: '', day_of_week: 'Sunday', start_time: '', end_time: '', subject: '', teacher_id: '', room: '' }; }
+  if (r) { editing.value = r.id; form.value = { class_id: r.class_id, day_of_week: r.day_of_week, start_time: r.start_time, end_time: r.end_time, subject_id: r.subject_id || '', teacher_id: r.teacher_id, room: r.room || '' }; }
+  else { editing.value = null; form.value = { class_id: '', day_of_week: 'Sunday', start_time: '', end_time: '', subject_id: '', teacher_id: '', room: '' }; }
   showModal.value = true;
 };
 const save = async () => {
@@ -134,5 +136,5 @@ const save = async () => {
   finally { saving.value = false; }
 };
 const deleteRoutine = async (id) => { if (!confirm('Delete?')) return; try { await api.delete(`/admin/routines/${id}`); fetchRoutines(); } catch (e) { alert(e.response?.data?.message || 'Error'); } };
-onMounted(() => { fetchClasses(); fetchTeachers(); fetchRoutines(); });
+onMounted(() => { fetchClasses(); fetchTeachers(); fetchSubjects(); fetchRoutines(); });
 </script>

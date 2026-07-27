@@ -37,6 +37,13 @@ class Student extends Model
         return $this->belongsTo(User::class, 'guardian_id');
     }
 
+    public function guardians()
+    {
+        return $this->belongsToMany(User::class, 'student_guardians', 'student_id', 'guardian_id')
+            ->withPivot('relationship_type', 'is_primary')
+            ->withTimestamps();
+    }
+
     public function class()
     {
         return $this->belongsTo(ClassModel::class);

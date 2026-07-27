@@ -12,6 +12,9 @@ class DemoDataSeeder extends Seeder
 {
     public function run(): void
     {
+        // Get admin user for exam routine creation
+        $admin = User::where('email', 'admin@duha.edu.bd')->first();
+
         // Create Classes
         $classes = [
             ['name' => 'Nursery', 'section' => 'A', 'capacity' => 15, 'academic_year' => '2026', 'status' => true],
@@ -120,5 +123,119 @@ class DemoDataSeeder extends Seeder
         }
 
         $this->command->info('Demo data created successfully!');
+
+        // ── Phase 1: Academic Infrastructure ──
+
+        // Create Rooms
+        $rooms = [
+            ['name' => 'Room 101', 'building' => 'Main Building', 'floor' => '1st', 'capacity' => 30, 'status' => 'available'],
+            ['name' => 'Room 102', 'building' => 'Main Building', 'floor' => '1st', 'capacity' => 30, 'status' => 'available'],
+            ['name' => 'Room 201', 'building' => 'Main Building', 'floor' => '2nd', 'capacity' => 35, 'status' => 'available'],
+            ['name' => 'Room 202', 'building' => 'Main Building', 'floor' => '2nd', 'capacity' => 35, 'status' => 'maintenance'],
+            ['name' => 'Lab 101', 'building' => 'Science Block', 'floor' => '1st', 'capacity' => 25, 'status' => 'available'],
+        ];
+
+        foreach ($rooms as $roomData) {
+            \App\Models\Room::create($roomData);
+        }
+
+        // Create Academic Years
+        $ay2026 = \App\Models\AcademicYear::create([
+            'name' => '2026-2027',
+            'start_date' => '2026-01-01',
+            'end_date' => '2026-12-31',
+            'is_current' => true,
+        ]);
+
+        \App\Models\AcademicYear::create([
+            'name' => '2025-2026',
+            'start_date' => '2025-01-01',
+            'end_date' => '2025-12-31',
+            'is_current' => false,
+        ]);
+
+        // Create Terms
+        $term1 = \App\Models\Term::create([
+            'academic_year_id' => $ay2026->id,
+            'name' => 'Term 1',
+            'start_date' => '2026-01-01',
+            'end_date' => '2026-04-30',
+            'is_current' => true,
+        ]);
+
+        \App\Models\Term::create([
+            'academic_year_id' => $ay2026->id,
+            'name' => 'Term 2',
+            'start_date' => '2026-05-01',
+            'end_date' => '2026-08-31',
+            'is_current' => false,
+        ]);
+
+        \App\Models\Term::create([
+            'academic_year_id' => $ay2026->id,
+            'name' => 'Term 3',
+            'start_date' => '2026-09-01',
+            'end_date' => '2026-12-31',
+            'is_current' => false,
+        ]);
+
+        // Create Class Routines (sample for Nursery A)
+        $allSubjects = Subject::all();
+        $nurseryA = $allClasses[0];
+        $nurseryASubjects = $allSubjects->where('class_id', $nurseryA->id)->values();
+        $room1 = \App\Models\Room::first();
+        $days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday'];
+
+        foreach ($days as $dayIndex => $day) {
+            if ($nurseryASubjects->count() > 0) {
+                \App\Models\ClassRoutine::create([
+                    'class_id' => $nurseryA->id,
+                    'day_of_week' => $day,
+                    'subject_id' => $nurseryASubjects[0]->id,
+                    'start_time' => '08:00',
+                    'end_time' => '08:45',
+                    'teacher_id' => $teacherModels[0]->id,
+                    'room_id' => $room1->id,
+                ]);
+            }
+            if ($nurseryASubjects->count() > 1) {
+                \App\Models\ClassRoutine::create([
+                    'class_id' => $nurseryA->id,
+                    'day_of_week' => $day,
+                    'subject_id' => $nurseryASubjects[1]->id,
+                    'start_time' => '09:00',
+                    'end_time' => '09:45',
+                    'teacher_id' => $teacherModels[1]->id,
+                    'room_id' => $room1->id,
+                ]);
+            }
+        }
+
+        // Create Exam Routines
+        if ($nurseryASubjects->count() > 0) {
+            \App\Models\ExamRoutine::create([
+                'class_id' => $nurseryA->id,
+                'subject_id' => $nurseryASubjects[0]->id,
+                'exam_name' => 'Mid-Term Exam',
+                'exam_date' => '2026-03-15',
+                'start_time' => '09:00',
+                'end_time' => '11:00',
+                'room_id' => $room1->id,
+                'created_by' => $admin->id,
+            ]);
+
+            \App\Models\ExamRoutine::create([
+                'class_id' => $nurseryA->id,
+                'subject_id' => $nurseryASubjects[1]->id,
+                'exam_name' => 'Mid-Term Exam',
+                'exam_date' => '2026-03-16',
+                'start_time' => '09:00',
+                'end_time' => '11:00',
+                'room_id' => $room1->id,
+                'created_by' => $admin->id,
+            ]);
+        }
+
+        $this->command->info('Academic infrastructure demo data created!');
     }
 }

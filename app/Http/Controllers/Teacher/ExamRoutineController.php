@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Admin;
+namespace App\Http\Controllers\Teacher;
 
 use App\Http\Controllers\Controller;
 use App\Models\ExamRoutine;
@@ -11,14 +11,13 @@ class ExamRoutineController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
-        $query = ExamRoutine::with(['class', 'subject', 'createdBy']);
+        $teacherId = $request->user()->id;
+
+        $query = ExamRoutine::with(['class', 'subject', 'createdBy'])
+            ->whereHas('class.teachers', fn ($q) => $q->where('users.id', $teacherId));
 
         if ($classId = $request->input('class_id')) {
             $query->where('class_id', $classId);
-        }
-
-        if ($examDate = $request->input('exam_date')) {
-            $query->where('exam_date', $examDate);
         }
 
         $examRoutines = $query->orderBy('exam_date')->orderBy('start_time')->paginate(50);
@@ -28,6 +27,8 @@ class ExamRoutineController extends Controller
 
     public function store(Request $request): JsonResponse
     {
+        $teacher = $request->user();
+
         $validated = $request->validate([
             'class_id' => 'required|exists:classes,id',
             'subject_id' => 'required|exists:subjects,id',
@@ -38,24 +39,28 @@ class ExamRoutineController extends Controller
             'room' => 'nullable|string|max:50',
         ]);
 
-        $validated['created_by'] = $request->user()->id;
+        // Verify teacher is assigned to this class
+        if (!$teacher->classes()->where('classes.id', $validated['class_id'])->exists()) {
+            return response()->json(['message' => 'You are not assigned to this class.'], 403);
+        }
+
+        $validated['created_by'] = $teacher->id;
 
         $examRoutine = ExamRoutine::create($validated);
 
         return response()->json($examRoutine->load(['class', 'subject']), 201);
     }
 
-    public function show(ExamRoutine $examRoutine): JsonResponse
-    {
-        $examRoutine->load(['class', 'subject', 'createdBy']);
-
-        return response()->json($examRoutine);
-    }
-
     public function update(Request $request, ExamRoutine $examRoutine): JsonResponse
     {
+        $teacher = $request->user();
+
+        // Only allow updating own routines
+        if ($examRoutine->created_by !== $teacher->id) {
+            return response()->json(['message' => 'You can only edit routines you created.'], 403);
+        }
+
         $validated = $request->validate([
-            'class_id' => 'sometimes|exists:classes,id',
             'subject_id' => 'sometimes|exists:subjects,id',
             'exam_name' => 'nullable|string|max:255',
             'exam_date' => 'sometimes|date',
@@ -71,6 +76,12 @@ class ExamRoutineController extends Controller
 
     public function destroy(ExamRoutine $examRoutine): JsonResponse
     {
+        $teacher = request()->user();
+
+        if ($examRoutine->created_by !== $teacher->id) {
+            return response()->json(['message' => 'You can only delete routines you created.'], 403);
+        }
+
         $examRoutine->delete();
 
         return response()->json(['message' => 'Exam routine deleted successfully']);

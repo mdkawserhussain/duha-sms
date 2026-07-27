@@ -16,8 +16,13 @@
           <p class="px-4 py-1 text-xs font-semibold text-gray-400 uppercase tracking-wider">Management</p>
           <router-link to="/admin/guardians" class="flex items-center px-4 py-2 text-sm font-medium text-gray-700 rounded-lg hover:bg-gray-100">Guardians</router-link>
           <router-link to="/admin/students" class="flex items-center px-4 py-2 text-sm font-medium text-gray-700 rounded-lg hover:bg-gray-100">Students</router-link>
+          <router-link to="/admin/promotions" class="flex items-center px-4 py-2 text-sm font-medium text-gray-700 rounded-lg hover:bg-gray-100">Promotions</router-link>
           <router-link to="/admin/teachers" class="flex items-center px-4 py-2 text-sm font-medium text-gray-700 rounded-lg hover:bg-gray-100">Teachers</router-link>
           <router-link to="/admin/classes" class="flex items-center px-4 py-2 text-sm font-medium text-gray-700 rounded-lg hover:bg-gray-100">Classes</router-link>
+          <router-link to="/admin/subjects" class="flex items-center px-4 py-2 text-sm font-medium text-gray-700 rounded-lg hover:bg-gray-100">Subjects</router-link>
+          <router-link to="/admin/rooms" class="flex items-center px-4 py-2 text-sm font-medium text-gray-700 rounded-lg hover:bg-gray-100">Rooms</router-link>
+          <router-link to="/admin/academic-years" class="flex items-center px-4 py-2 text-sm font-medium text-gray-700 rounded-lg hover:bg-gray-100">Academic Years</router-link>
+          <router-link to="/admin/terms" class="flex items-center px-4 py-2 text-sm font-medium text-gray-700 rounded-lg hover:bg-gray-100">Terms</router-link>
 
           <p class="px-4 py-1 mt-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">Academics</p>
           <router-link to="/admin/attendance" class="flex items-center px-4 py-2 text-sm font-medium text-gray-700 rounded-lg hover:bg-gray-100">Attendance</router-link>
@@ -38,6 +43,7 @@
           <router-link to="/admin/applications" class="flex items-center px-4 py-2 text-sm font-medium text-gray-700 rounded-lg hover:bg-gray-100">Applications</router-link>
           <router-link to="/admin/profile-change-requests" class="flex items-center px-4 py-2 text-sm font-medium text-gray-700 rounded-lg hover:bg-gray-100">Profile Changes</router-link>
           <router-link to="/admin/activity-log" class="flex items-center px-4 py-2 text-sm font-medium text-gray-700 rounded-lg hover:bg-gray-100">Activity Log</router-link>
+          <router-link to="/admin/settings" class="flex items-center px-4 py-2 text-sm font-medium text-gray-700 rounded-lg hover:bg-gray-100">Settings</router-link>
         </div>
 
         <div v-else-if="authStore.isTeacher" class="space-y-1">
@@ -52,6 +58,7 @@
 
           <p class="px-4 py-1 mt-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">Schedule</p>
           <router-link to="/teacher/routine" class="flex items-center px-4 py-2 text-sm font-medium text-gray-700 rounded-lg hover:bg-gray-100">Routine</router-link>
+          <router-link to="/teacher/exam-routines" class="flex items-center px-4 py-2 text-sm font-medium text-gray-700 rounded-lg hover:bg-gray-100">Exam Routines</router-link>
 
           <p class="px-4 py-1 mt-3 text-xs font-semibold text-gray-400 uppercase tracking-wider">Communication</p>
           <router-link to="/teacher/messages" class="flex items-center px-4 py-2 text-sm font-medium text-gray-700 rounded-lg hover:bg-gray-100">Messages</router-link>

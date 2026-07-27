@@ -41,6 +41,7 @@ class RoutineController extends Controller
             'start_time' => 'required|date_format:H:i',
             'end_time' => 'required|date_format:H:i|after:start_time',
             'teacher_id' => 'required|exists:users,id,role,teacher',
+            'room' => 'nullable|string|max:50',
         ]);
 
         $routine = ClassRoutine::create($validated);
@@ -63,6 +64,7 @@ class RoutineController extends Controller
             'start_time' => 'sometimes|date_format:H:i',
             'end_time' => 'sometimes|date_format:H:i|after:start_time',
             'teacher_id' => 'sometimes|exists:users,id,role,teacher',
+            'room' => 'nullable|string|max:50',
         ]);
 
         $routine->update($validated);

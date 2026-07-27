@@ -12,9 +12,12 @@ class ExamRoutine extends Model
     protected $fillable = [
         'class_id',
         'subject_id',
+        'exam_name',
         'exam_date',
         'start_time',
         'end_time',
+        'room',
+        'room_id',
         'created_by',
     ];
 
@@ -38,6 +41,11 @@ class ExamRoutine extends Model
     public function createdBy()
     {
         return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function room()
+    {
+        return $this->belongsTo(Room::class);
     }
 
     public function evaluations()

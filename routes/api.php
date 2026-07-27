@@ -27,6 +27,23 @@ Route::middleware('auth:sanctum')->group(function () {
         // Students
         Route::apiResource('students', \App\Http\Controllers\Admin\StudentController::class);
         Route::post('/students/{student}/toggle-status', [\App\Http\Controllers\Admin\StudentController::class, 'toggleStatus']);
+        Route::post('/students/{student}/transfer', [\App\Http\Controllers\Admin\StudentController::class, 'transfer']);
+        Route::post('/students/import', [\App\Http\Controllers\Admin\StudentController::class, 'import']);
+        Route::get('/students/export', [\App\Http\Controllers\Admin\StudentController::class, 'export']);
+
+        // Student Promotions
+        Route::get('/promotions', [\App\Http\Controllers\Admin\StudentPromotionController::class, 'index']);
+        Route::get('/promotions/by-class', [\App\Http\Controllers\Admin\StudentPromotionController::class, 'byClass']);
+        Route::post('/promotions', [\App\Http\Controllers\Admin\StudentPromotionController::class, 'store']);
+
+        // Student Profile - Emergency Contacts
+        Route::apiResource('students/{student}/emergency-contacts', \App\Http\Controllers\Admin\EmergencyContactController::class)->except(['show']);
+
+        // Student Profile - Medical Records
+        Route::apiResource('students/{student}/medical-records', \App\Http\Controllers\Admin\MedicalRecordController::class)->except(['show']);
+
+        // Student Profile - Pickup Persons
+        Route::apiResource('students/{student}/pickup-persons', \App\Http\Controllers\Admin\PickupPersonController::class)->except(['show']);
 
         // Teachers
         Route::apiResource('teachers', \App\Http\Controllers\Admin\TeacherController::class);
@@ -36,6 +53,20 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::apiResource('classes', \App\Http\Controllers\Admin\ClassController::class);
         Route::post('/classes/{class}/assign-teacher', [\App\Http\Controllers\Admin\ClassController::class, 'assignTeacher']);
         Route::delete('/classes/{class}/remove-teacher/{teacher}', [\App\Http\Controllers\Admin\ClassController::class, 'removeTeacher']);
+
+        // Subjects
+        Route::apiResource('subjects', \App\Http\Controllers\Admin\SubjectController::class);
+
+        // Rooms
+        Route::apiResource('rooms', \App\Http\Controllers\Admin\RoomController::class);
+
+        // Academic Years
+        Route::apiResource('academic-years', \App\Http\Controllers\Admin\AcademicYearController::class);
+        Route::post('/academic-years/{academicYear}/set-current', [\App\Http\Controllers\Admin\AcademicYearController::class, 'setCurrent']);
+
+        // Terms
+        Route::apiResource('terms', \App\Http\Controllers\Admin\TermController::class);
+        Route::post('/terms/{term}/set-current', [\App\Http\Controllers\Admin\TermController::class, 'setCurrent']);
 
         // Attendance
         Route::get('/attendance', [\App\Http\Controllers\Admin\AttendanceController::class, 'index']);
@@ -87,6 +118,11 @@ Route::middleware('auth:sanctum')->group(function () {
 
         // Activity Log
         Route::get('/activity-log', [\App\Http\Controllers\Admin\ActivityLogController::class, 'index']);
+
+        // System Settings
+        Route::get('/settings', [\App\Http\Controllers\Admin\SystemSettingController::class, 'index']);
+        Route::put('/settings', [\App\Http\Controllers\Admin\SystemSettingController::class, 'update']);
+        Route::get('/settings/group/{group}', [\App\Http\Controllers\Admin\SystemSettingController::class, 'getGroup']);
     });
 
     // Teacher Routes
@@ -112,6 +148,9 @@ Route::middleware('auth:sanctum')->group(function () {
 
         // Routine
         Route::get('/routine', [\App\Http\Controllers\Teacher\RoutineController::class, 'index']);
+
+        // Exam Routines
+        Route::apiResource('exam-routines', \App\Http\Controllers\Teacher\ExamRoutineController::class);
 
         // Messages
         Route::apiResource('messages', \App\Http\Controllers\Teacher\MessageController::class);

@@ -16,6 +16,12 @@ const showAddModal = ref(false)
 const editingStudent = ref(null)
 const formErrors = ref({})
 const saving = ref(false)
+const showTransferModal = ref(false)
+const transferStudent = ref(null)
+const transferForm = ref({ class_id: '', reason: '' })
+const transferSaving = ref(false)
+const importFile = ref(null)
+const importing = ref(false)
 
 const form = ref({
   name: '',
@@ -23,6 +29,7 @@ const form = ref({
   dob: '',
   class_id: '',
   guardian_id: '',
+  guardian_ids: [],
   admission_date: new Date().toISOString().split('T')[0],
 })
 
@@ -73,6 +80,7 @@ const openAddModal = () => {
     dob: '',
     class_id: '',
     guardian_id: '',
+    guardian_ids: [],
     admission_date: new Date().toISOString().split('T')[0],
   }
   formErrors.value = {}
@@ -81,12 +89,17 @@ const openAddModal = () => {
 
 const editStudent = (student) => {
   editingStudent.value = student
+  // Get additional guardian IDs (excluding the primary guardian)
+  const additionalGuardianIds = (student.guardians || [])
+    .filter(g => g.id !== student.guardian_id)
+    .map(g => g.id)
   form.value = {
     name: student.name,
     gender: student.gender === 'm' ? 'male' : student.gender === 'f' ? 'female' : student.gender,
     dob: student.dob?.split('T')[0] || '',
     class_id: student.class_id,
     guardian_id: student.guardian_id,
+    guardian_ids: additionalGuardianIds,
     admission_date: student.admission_date?.split('T')[0] || '',
   }
   formErrors.value = {}
@@ -139,6 +152,60 @@ const formatDate = (date) => {
   return new Date(date).toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' })
 }
 
+const openTransferModal = (student) => {
+  transferStudent.value = student
+  transferForm.value = { class_id: '', reason: '' }
+  showTransferModal.value = true
+}
+
+const transferStudentFn = async () => {
+  transferSaving.value = true
+  try {
+    await api.post(`/admin/students/${transferStudent.value.id}/transfer`, transferForm.value)
+    showTransferModal.value = false
+    loadStudents()
+  } catch (error) {
+    alert(error.response?.data?.message || 'Transfer failed')
+  } finally {
+    transferSaving.value = false
+  }
+}
+
+const importStudents = async () => {
+  if (!importFile.value) return
+  importing.value = true
+  try {
+    const formData = new FormData()
+    formData.append('file', importFile.value)
+    await api.post('/admin/students/import', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    })
+    importFile.value = null
+    document.getElementById('import-input').value = ''
+    loadStudents()
+  } catch (error) {
+    alert(error.response?.data?.message || 'Import failed')
+  } finally {
+    importing.value = false
+  }
+}
+
+const exportStudents = async () => {
+  try {
+    const response = await api.get('/admin/students/export', { responseType: 'blob' })
+    const url = window.URL.createObjectURL(new Blob([response.data]))
+    const link = document.createElement('a')
+    link.href = url
+    link.setAttribute('download', 'students.xlsx')
+    document.body.appendChild(link)
+    link.click()
+    link.remove()
+    window.URL.revokeObjectURL(url)
+  } catch (error) {
+    console.error('Export failed:', error)
+  }
+}
+
 watch([page, search, classFilter, statusFilter], loadStudents)
 
 onMounted(() => {
@@ -150,14 +217,43 @@ onMounted(() => {
 
 <template>
   <div>
-    <div class="flex justify-between items-center mb-6">
+    <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 mb-6">
       <h1 class="text-2xl font-bold text-gray-900">Students</h1>
-      <button
-        @click="openAddModal"
-        class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700"
-      >
-        Add Student
-      </button>
+      <div class="flex flex-wrap items-center gap-2">
+        <input
+          id="import-input"
+          type="file"
+          accept=".xlsx,.xls,.csv"
+          class="hidden"
+          @change="importFile = $event.target.files[0]"
+        />
+        <label
+          for="import-input"
+          class="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 cursor-pointer text-sm font-medium"
+        >
+          {{ importFile ? importFile.name : 'Choose File' }}
+        </label>
+        <button
+          v-if="importFile"
+          @click="importStudents"
+          :disabled="importing"
+          class="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 disabled:opacity-50 text-sm font-medium"
+        >
+          {{ importing ? 'Importing...' : 'Import' }}
+        </button>
+        <button
+          @click="exportStudents"
+          class="px-4 py-2 bg-sky-600 text-white rounded-lg hover:bg-sky-700 text-sm font-medium"
+        >
+          Export
+        </button>
+        <button
+          @click="openAddModal"
+          class="px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 text-sm font-medium"
+        >
+          Add Student
+        </button>
+      </div>
     </div>
 
     <div class="bg-white rounded-lg shadow overflow-hidden">
@@ -225,6 +321,12 @@ onMounted(() => {
                 </button>
               </td>
               <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                <button
+                  @click="openTransferModal(student)"
+                  class="text-amber-600 hover:text-amber-900 mr-3"
+                >
+                  Transfer
+                </button>
                 <button
                   @click="editStudent(student)"
                   class="text-indigo-600 hover:text-indigo-900 mr-3"
@@ -355,6 +457,19 @@ onMounted(() => {
                   <p v-if="formErrors.guardian_id" class="mt-1 text-sm text-red-600">{{ formErrors.guardian_id[0] }}</p>
                 </div>
                 <div>
+                  <label class="block text-sm font-medium text-gray-700">Additional Guardians</label>
+                  <select
+                    v-model="form.guardian_ids"
+                    multiple
+                    class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 h-32"
+                  >
+                    <option v-for="g in guardians" :key="g.id" :value="g.id">
+                      {{ g.name }} ({{ g.phone }})
+                    </option>
+                  </select>
+                  <p class="mt-1 text-xs text-gray-500">Hold Ctrl/Cmd to select multiple</p>
+                </div>
+                <div>
                   <label class="block text-sm font-medium text-gray-700">Admission Date *</label>
                   <input
                     v-model="form.admission_date"
@@ -378,6 +493,76 @@ onMounted(() => {
                   class="px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm font-medium hover:bg-indigo-700 disabled:opacity-50"
                 >
                   {{ saving ? 'Saving...' : (editingStudent ? 'Update' : 'Create') }}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Transfer Modal -->
+    <div
+      v-if="showTransferModal"
+      class="fixed inset-0 z-50 overflow-y-auto"
+      aria-labelledby="transfer-modal-title"
+      role="dialog"
+      aria-modal="true"
+    >
+      <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        <div
+          class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"
+          @click="showTransferModal = false"
+        />
+
+        <div class="relative z-10 inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+          <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+            <h3 class="text-lg font-medium text-gray-900 mb-4">
+              Transfer Student
+            </h3>
+            <p class="text-sm text-gray-600 mb-4">
+              Transferring <strong>{{ transferStudent?.name }}</strong> from
+              <strong>{{ transferStudent?.class?.name }} - {{ transferStudent?.class?.section }}</strong>
+            </p>
+            <form @submit.prevent="transferStudentFn">
+              <div class="space-y-4">
+                <div>
+                  <label class="block text-sm font-medium text-gray-700">Target Class *</label>
+                  <select
+                    v-model="transferForm.class_id"
+                    required
+                    class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                  >
+                    <option value="">Select Target Class</option>
+                    <option v-for="cls in classes" :key="cls.id" :value="cls.id">
+                      {{ cls.name }} - {{ cls.section }} ({{ cls.capacity }} seats)
+                    </option>
+                  </select>
+                </div>
+                <div>
+                  <label class="block text-sm font-medium text-gray-700">Reason</label>
+                  <textarea
+                    v-model="transferForm.reason"
+                    rows="3"
+                    class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
+                    placeholder="Optional: reason for transfer"
+                  />
+                </div>
+              </div>
+              <div class="mt-6 flex justify-end space-x-3">
+                <button
+                  type="button"
+                  @click="showTransferModal = false"
+                  class="px-4 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  :disabled="transferSaving"
+                  class="px-4 py-2 bg-amber-600 text-white rounded-lg text-sm font-medium hover:bg-amber-700 disabled:opacity-50"
+                >
+                  {{ transferSaving ? 'Transferring...' : 'Transfer Student' }}
                 </button>
               </div>
             </form>

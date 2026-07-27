@@ -23,8 +23,8 @@
           <tr v-for="er in examRoutines" :key="er.id">
             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ er.exam_name }}</td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ er.class?.name }}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ er.subject }}</td>
-            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ er.date }}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ er.subject?.name }}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ er.exam_date }}</td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ er.start_time }}</td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ er.end_time }}</td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ er.room || '-' }}</td>
@@ -50,8 +50,8 @@
               <div><label class="block text-sm font-medium text-gray-700 mb-1">Class</label><select v-model="form.class_id" required class="w-full rounded-md border-gray-300 text-sm"><option value="">Select...</option><option v-for="cls in classes" :key="cls.id" :value="cls.id">{{ cls.name }}</option></select></div>
             </div>
             <div class="grid grid-cols-2 gap-4">
-              <div><label class="block text-sm font-medium text-gray-700 mb-1">Subject</label><input v-model="form.subject" required class="w-full rounded-md border-gray-300 text-sm" /></div>
-              <div><label class="block text-sm font-medium text-gray-700 mb-1">Date</label><input type="date" v-model="form.date" required class="w-full rounded-md border-gray-300 text-sm" /></div>
+              <div><label class="block text-sm font-medium text-gray-700 mb-1">Subject</label><select v-model="form.subject_id" required class="w-full rounded-md border-gray-300 text-sm"><option value="">Select...</option><option v-for="s in subjects" :key="s.id" :value="s.id">{{ s.name }}</option></select></div>
+              <div><label class="block text-sm font-medium text-gray-700 mb-1">Date</label><input type="date" v-model="form.exam_date" required class="w-full rounded-md border-gray-300 text-sm" /></div>
             </div>
             <div class="grid grid-cols-3 gap-4">
               <div><label class="block text-sm font-medium text-gray-700 mb-1">Start</label><input type="time" v-model="form.start_time" required class="w-full rounded-md border-gray-300 text-sm" /></div>
@@ -75,16 +75,18 @@ import api from '../../services/api';
 
 const examRoutines = ref([]);
 const classes = ref([]);
+const subjects = ref([]);
 const showModal = ref(false);
 const editing = ref(null);
 const saving = ref(false);
-const form = ref({ exam_name: '', class_id: '', subject: '', date: '', start_time: '', end_time: '', room: '' });
+const form = ref({ exam_name: '', class_id: '', subject_id: '', exam_date: '', start_time: '', end_time: '', room: '' });
 
 const fetchClasses = async () => { try { const r = await api.get('/admin/classes', { params: { per_page: 100 } }); classes.value = r.data.data || r.data; } catch (e) { console.error(e); } };
+const fetchSubjects = async () => { try { const r = await api.get('/admin/subjects', { params: { per_page: 200 } }); subjects.value = r.data.data || r.data; } catch (e) { console.error(e); } };
 const fetch = async () => { try { const r = await api.get('/admin/exam-routines'); examRoutines.value = r.data.data || r.data; } catch (e) { console.error(e); } };
 const openModal = (er = null) => {
-  if (er) { editing.value = er.id; form.value = { exam_name: er.exam_name, class_id: er.class_id, subject: er.subject, date: er.date, start_time: er.start_time, end_time: er.end_time, room: er.room || '' }; }
-  else { editing.value = null; form.value = { exam_name: '', class_id: '', subject: '', date: '', start_time: '', end_time: '', room: '' }; }
+  if (er) { editing.value = er.id; form.value = { exam_name: er.exam_name || '', class_id: er.class_id, subject_id: er.subject_id || '', exam_date: er.exam_date, start_time: er.start_time, end_time: er.end_time, room: er.room || '' }; }
+  else { editing.value = null; form.value = { exam_name: '', class_id: '', subject_id: '', exam_date: '', start_time: '', end_time: '', room: '' }; }
   showModal.value = true;
 };
 const save = async () => {
@@ -97,5 +99,5 @@ const save = async () => {
   finally { saving.value = false; }
 };
 const deleteExamRoutine = async (id) => { if (!confirm('Delete?')) return; try { await api.delete(`/admin/exam-routines/${id}`); fetch(); } catch (e) { alert(e.response?.data?.message || 'Error'); } };
-onMounted(() => { fetchClasses(); fetch(); });
+onMounted(() => { fetchClasses(); fetchSubjects(); fetch(); });
 </script>
