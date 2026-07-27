@@ -35,7 +35,9 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import api from '../../services/api';
+import { useToast } from '../../composables/useToast';
 
+const toast = useToast();
 const stats = ref([]);
 const classes = ref([]);
 const recentAttendance = ref([]);
@@ -52,6 +54,6 @@ onMounted(async () => {
     ];
     classes.value = d.classes || [];
     recentAttendance.value = d.recent_attendance || [];
-  } catch (e) { console.error(e); }
+  } catch (e) { toast.error('Failed to load dashboard'); }
 });
 </script>

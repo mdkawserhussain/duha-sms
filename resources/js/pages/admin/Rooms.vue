@@ -83,6 +83,9 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import api from '../../services/api';
+import { useToast } from '../../composables/useToast';
+
+const toast = useToast();
 
 const rooms = ref([]);
 const showModal = ref(false);
@@ -110,7 +113,7 @@ const fetchRooms = async () => {
     if (filters.value.status) params.status = filters.value.status;
     const r = await api.get('/admin/rooms', { params });
     rooms.value = r.data.data || r.data;
-  } catch (e) { console.error(e); }
+  } catch (e) { toast.error('Failed to load rooms'); }
 };
 const openModal = (room = null) => {
   if (room) { editing.value = room.id; form.value = { name: room.name, building: room.building || '', floor: room.floor || '', capacity: room.capacity, status: room.status }; }
@@ -123,9 +126,9 @@ const save = async () => {
     if (editing.value) await api.put(`/admin/rooms/${editing.value}`, form.value);
     else await api.post('/admin/rooms', form.value);
     showModal.value = false; fetchRooms();
-  } catch (e) { alert(e.response?.data?.message || 'Error saving'); }
+  } catch (e) { toast.error(e.response?.data?.message || 'Error saving'); }
   finally { saving.value = false; }
 };
-const deleteRoom = async (id) => { if (!confirm('Delete this room?')) return; try { await api.delete(`/admin/rooms/${id}`); fetchRooms(); } catch (e) { alert(e.response?.data?.message || 'Error'); } };
+const deleteRoom = async (id) => { if (!confirm('Delete this room?')) return; try { await api.delete(`/admin/rooms/${id}`); fetchRooms(); } catch (e) { toast.error(e.response?.data?.message || 'Error'); } };
 onMounted(() => { fetchRooms(); });
 </script>

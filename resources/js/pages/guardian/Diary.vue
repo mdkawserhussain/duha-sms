@@ -4,7 +4,7 @@
       <h1 class="text-2xl font-bold text-gray-900">Diary</h1>
       <select v-model="studentId" @change="fetchDiary" class="rounded-md border-gray-300 text-sm">
         <option value="">Select Child</option>
-        <option v-for="child in children" :key="child.id" :value="child.id">{{ child.first_name }} {{ child.last_name }}</option>
+        <option v-for="child in children" :key="child.id" :value="child.id">{{ child.name }}</option>
       </select>
     </div>
 
@@ -52,6 +52,9 @@
 import { ref, reactive, onMounted } from 'vue';
 import api from '../../services/api';
 import { useRoute } from 'vue-router';
+import { useToast } from '../../composables/useToast';
+
+const toast = useToast();
 
 const route = useRoute();
 const children = ref([]);
@@ -69,7 +72,7 @@ const fetchDiary = async () => {
     const r = await api.get(`/guardian/diary/${studentId.value}`);
     diaryEntries.value = r.data.data || r.data || [];
   } catch (e) {
-    console.error(e);
+    toast.error('Failed to load diary');
   }
 };
 
@@ -81,11 +84,11 @@ const addComment = async (diaryId) => {
     commentText[diaryId] = '';
     fetchDiary();
   } catch (e) {
-    alert(e.response?.data?.message || 'Error adding comment');
+    toast.error(e.response?.data?.message || 'Error adding comment');
   }
 };
 
-onMounted(async () => {
+const fetchChildren = async () => {
   try {
     const r = await api.get('/guardian/children');
     children.value = r.data.data || r.data || [];
@@ -94,7 +97,9 @@ onMounted(async () => {
       fetchDiary();
     }
   } catch (e) {
-    console.error(e);
+    toast.error('Failed to load children');
   }
-});
+};
+
+onMounted(() => { fetchChildren(); });
 </script>

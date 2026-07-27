@@ -1,32 +1,17 @@
 <!DOCTYPE html>
 <html>
-<head><title>Auto Login</title></head>
+<head>
+    <title>Auto Login - Duha SMS</title>
+    <script>
+        // Set auth token and user role in localStorage
+        localStorage.setItem('auth_token', '1|Xk5jzCPh7LISzNFdGns3kQPv4rw3QVqp2g2svyIY1f0f32eb');
+        localStorage.setItem('user_role', 'admin');
+        
+        // Redirect to admin dashboard
+        window.location.href = '/admin';
+    </script>
+</head>
 <body>
-<p>Logging in...</p>
-<script>
-  async function autoLogin() {
-    const email = 'admin@duha.edu.bd';
-    const password = 'password';
-    try {
-      const res = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-        body: JSON.stringify({ email, password })
-      });
-      const data = await res.json();
-      if (data.token) {
-        localStorage.setItem('auth_token', data.token);
-        localStorage.setItem('user_role', data.user.role);
-        localStorage.setItem('user', JSON.stringify(data.user));
-        window.location.href = '/';
-      } else {
-        document.body.innerHTML = '<p>Login failed: ' + JSON.stringify(data) + '</p>';
-      }
-    } catch (e) {
-      document.body.innerHTML = '<p>Error: ' + e.message + '</p>';
-    }
-  }
-  autoLogin();
-</script>
+    <p>Logging in as admin... Redirecting to dashboard.</p>
 </body>
 </html>

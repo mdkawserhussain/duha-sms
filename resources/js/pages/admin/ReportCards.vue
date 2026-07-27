@@ -50,7 +50,7 @@
         </thead>
         <tbody class="bg-white divide-y divide-gray-200">
           <tr v-for="rc in reportCards" :key="rc.id">
-            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ rc.student?.first_name }} {{ rc.student?.last_name }}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ rc.student?.name }}</td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ rc.student?.class?.name }}</td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ rc.term }}</td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ rc.academic_year }}</td>
@@ -77,7 +77,7 @@
         <h2 class="text-lg font-semibold mb-4">{{ editing ? 'Edit' : 'Generate' }} Report Card</h2>
         <form @submit.prevent="save">
           <div class="space-y-4">
-            <div v-if="!editing"><label class="block text-sm font-medium text-gray-700 mb-1">Student</label><select v-model="form.student_id" required class="w-full rounded-md border-gray-300 text-sm"><option value="">Select...</option><option v-for="s in students" :key="s.id" :value="s.id">{{ s.first_name }} {{ s.last_name }}</option></select></div>
+            <div v-if="!editing"><label class="block text-sm font-medium text-gray-700 mb-1">Student</label><select v-model="form.student_id" required class="w-full rounded-md border-gray-300 text-sm"><option value="">Select...</option><option v-for="s in students" :key="s.id" :value="s.id">{{ s.name }}</option></select></div>
             <div class="grid grid-cols-2 gap-4">
               <div><label class="block text-sm font-medium text-gray-700 mb-1">Term</label><select v-model="form.term" required class="w-full rounded-md border-gray-300 text-sm"><option value="1st Term">1st Term</option><option value="2nd Term">2nd Term</option><option value="3rd Term">3rd Term</option></select></div>
               <div><label class="block text-sm font-medium text-gray-700 mb-1">Academic Year</label><input v-model="form.academic_year" required class="w-full rounded-md border-gray-300 text-sm" /></div>
@@ -97,6 +97,9 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import api from '../../services/api';
+import { useToast } from '../../composables/useToast';
+
+const toast = useToast();
 
 const reportCards = ref([]);
 const classes = ref([]);
@@ -107,14 +110,14 @@ const saving = ref(false);
 const filters = ref({ class_id: '', term: '', academic_year: '' });
 const form = ref({ student_id: '', term: '1st Term', academic_year: '2026', comments: '' });
 
-const fetchClasses = async () => { try { const r = await api.get('/admin/classes', { params: { per_page: 100 } }); classes.value = r.data.data || r.data; } catch (e) { console.error(e); } };
-const fetchStudents = async () => { try { const r = await api.get('/admin/students', { params: { per_page: 200 } }); students.value = r.data.data || r.data; } catch (e) { console.error(e); } };
+const fetchClasses = async () => { try { const r = await api.get('/admin/classes', { params: { per_page: 100 } }); classes.value = r.data.data || r.data; } catch (e) { toast.error('Failed to load classes'); } };
+const fetchStudents = async () => { try { const r = await api.get('/admin/students', { params: { per_page: 200 } }); students.value = r.data.data || r.data; } catch (e) { toast.error('Failed to load students'); } };
 const fetchReportCards = async () => {
   try {
     const params = {}; Object.entries(filters.value).forEach(([k, v]) => { if (v) params[k] = v; });
     const r = await api.get('/admin/report-cards', { params });
     reportCards.value = r.data.data || r.data;
-  } catch (e) { console.error(e); }
+  } catch (e) { toast.error('Failed to load report cards'); }
 };
 const openModal = (rc = null) => {
   if (rc) { editing.value = rc.id; form.value = { term: rc.term, academic_year: rc.academic_year, comments: rc.comments || '' }; }
@@ -127,10 +130,10 @@ const save = async () => {
     if (editing.value) await api.put(`/admin/report-cards/${editing.value}`, form.value);
     else await api.post('/admin/report-cards', form.value);
     showModal.value = false; fetchReportCards();
-  } catch (e) { alert(e.response?.data?.message || 'Error saving'); }
+  } catch (e) { toast.error(e.response?.data?.message || 'Error saving'); }
   finally { saving.value = false; }
 };
-const publish = async (id) => { if (!confirm('Publish this report card?')) return; try { await api.post(`/admin/report-cards/${id}/publish`); fetchReportCards(); } catch (e) { alert(e.response?.data?.message || 'Error'); } };
-const deleteReportCard = async (id) => { if (!confirm('Delete?')) return; try { await api.delete(`/admin/report-cards/${id}`); fetchReportCards(); } catch (e) { alert(e.response?.data?.message || 'Error'); } };
+const publish = async (id) => { if (!confirm('Publish this report card?')) return; try { await api.post(`/admin/report-cards/${id}/publish`); fetchReportCards(); } catch (e) { toast.error(e.response?.data?.message || 'Error'); } };
+const deleteReportCard = async (id) => { if (!confirm('Delete?')) return; try { await api.delete(`/admin/report-cards/${id}`); fetchReportCards(); } catch (e) { toast.error(e.response?.data?.message || 'Error'); } };
 onMounted(() => { fetchClasses(); fetchStudents(); fetchReportCards(); });
 </script>

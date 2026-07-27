@@ -1,6 +1,9 @@
 <script setup>
 import { ref, onMounted, watch } from 'vue'
 import api from '../../services/api'
+import { useToast } from '../../composables/useToast'
+
+const toast = useToast()
 
 const classes = ref([])
 const teachers = ref([])
@@ -41,7 +44,7 @@ const loadClasses = async () => {
     total.value = response.data.total
     totalPages.value = response.data.last_page
   } catch (error) {
-    console.error('Failed to load classes:', error)
+    toast.error('Failed to load classes')
   } finally {
     loading.value = false
   }
@@ -52,7 +55,7 @@ const loadTeachers = async () => {
     const response = await api.get('/admin/teachers', { params: { per_page: 100 } })
     teachers.value = response.data.data
   } catch (error) {
-    console.error('Failed to load teachers:', error)
+    toast.error('Failed to load teachers')
   }
 }
 
@@ -86,7 +89,7 @@ const deleteClass = async (id) => {
     await api.delete(`/admin/classes/${id}`)
     loadClasses()
   } catch (error) {
-    console.error('Failed to delete class:', error)
+    toast.error('Failed to delete class')
   }
 }
 
@@ -105,7 +108,7 @@ const saveClass = async () => {
     if (error.response?.status === 422) {
       formErrors.value = error.response.data.errors
     } else {
-      console.error('Failed to save class:', error)
+      toast.error('Failed to save class')
     }
   } finally {
     saving.value = false
@@ -125,7 +128,7 @@ const assignTeacher = async () => {
     showAssignModal.value = false
     loadClasses()
   } catch (error) {
-    console.error('Failed to assign teacher:', error)
+    toast.error('Failed to assign teacher')
   }
 }
 
@@ -135,7 +138,7 @@ const removeTeacher = async (classId, teacherId) => {
     await api.delete(`/admin/classes/${classId}/remove-teacher/${teacherId}`)
     loadClasses()
   } catch (error) {
-    console.error('Failed to remove teacher:', error)
+    toast.error('Failed to remove teacher')
   }
 }
 
@@ -280,19 +283,7 @@ onMounted(() => {
     </div>
 
     <!-- Add/Edit Modal -->
-    <div
-      v-if="showAddModal"
-      class="fixed inset-0 z-50 overflow-y-auto"
-      aria-labelledby="modal-title"
-      role="dialog"
-      aria-modal="true"
-    >
-      <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-        <div
-          class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"
-          @click="showAddModal = false"
-        />
-
+    <div v-if="showAddModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50">
         <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
           <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
             <h3 class="text-lg font-medium text-gray-900 mb-4">
@@ -372,23 +363,9 @@ onMounted(() => {
             </form>
           </div>
         </div>
-      </div>
     </div>
-
     <!-- Assign Teacher Modal -->
-    <div
-      v-if="showAssignModal"
-      class="fixed inset-0 z-50 overflow-y-auto"
-      aria-labelledby="modal-title"
-      role="dialog"
-      aria-modal="true"
-    >
-      <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-        <div
-          class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"
-          @click="showAssignModal = false"
-        />
-
+    <div v-if="showAssignModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50">
         <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-md sm:w-full">
           <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
             <h3 class="text-lg font-medium text-gray-900 mb-4">
@@ -439,7 +416,6 @@ onMounted(() => {
             </form>
           </div>
         </div>
-      </div>
     </div>
   </div>
 </template>

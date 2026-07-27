@@ -7,10 +7,10 @@
         <div class="px-6 py-4 border-b border-gray-200 bg-indigo-50">
           <div class="flex items-center">
             <div class="w-12 h-12 rounded-full bg-indigo-200 flex items-center justify-center">
-              <span class="text-indigo-700 font-bold text-lg">{{ child.first_name?.charAt(0) }}{{ child.last_name?.charAt(0) }}</span>
+              <span class="text-indigo-700 font-bold text-lg">{{ child.name?.charAt(0) }}</span>
             </div>
             <div class="ml-4">
-              <h3 class="font-semibold text-gray-900">{{ child.first_name }} {{ child.last_name }}</h3>
+              <h3 class="font-semibold text-gray-900">{{ child.name }}</h3>
               <p class="text-sm text-gray-600">Class: {{ child.class?.name || 'N/A' }}</p>
             </div>
           </div>
@@ -50,6 +50,9 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import api from '../../services/api';
+import { useToast } from '../../composables/useToast';
+
+const toast = useToast();
 
 const children = ref([]);
 
@@ -58,7 +61,7 @@ onMounted(async () => {
     const r = await api.get('/guardian/children');
     children.value = r.data.data || r.data || [];
   } catch (e) {
-    console.error(e);
+    toast.error('Failed to load children');
   }
 });
 </script>

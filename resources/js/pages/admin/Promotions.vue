@@ -1,6 +1,9 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import api from '../../services/api'
+import { useToast } from '../../composables/useToast'
+
+const toast = useToast()
 
 const classes = ref([])
 const sourceStudents = ref([])
@@ -21,7 +24,7 @@ const loadClasses = async () => {
     const response = await api.get('/admin/classes')
     classes.value = response.data.data
   } catch (error) {
-    console.error('Failed to load classes:', error)
+    toast.error('Failed to load classes:')
   }
 }
 
@@ -38,7 +41,7 @@ const loadStudents = async () => {
     })
     sourceStudents.value = response.data
   } catch (error) {
-    console.error('Failed to load students:', error)
+    toast.error('Failed to load students:')
   } finally {
     loadingStudents.value = false
   }
@@ -50,7 +53,7 @@ const loadHistory = async () => {
     const response = await api.get('/admin/promotions', { params: { academic_year: academicYear.value } })
     history.value = response.data.data
   } catch (error) {
-    console.error('Failed to load history:', error)
+    toast.error('Failed to load history:')
   } finally {
     loadingHistory.value = false
   }
@@ -75,11 +78,11 @@ const toggleStudent = (id) => {
 
 const promote = async (action) => {
   if (selectedStudents.value.length === 0) {
-    alert('Please select students first')
+    toast.error('Please select students first')
     return
   }
   if (action === 'promoted' && !selectedTargetClass.value) {
-    alert('Please select a target class for promotion')
+    toast.error('Please select a target class for promotion')
     return
   }
 
@@ -95,12 +98,12 @@ const promote = async (action) => {
       academic_year: academicYear.value,
       remarks: remarks.value,
     })
-    alert(response.data.message)
+    toast.success(response.data.message)
     selectedStudents.value = []
     loadStudents()
     loadHistory()
   } catch (error) {
-    alert(error.response?.data?.message || 'Operation failed')
+    toast.error(error.response?.data?.message || 'Operation failed')
   } finally {
     processing.value = false
   }

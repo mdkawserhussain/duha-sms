@@ -53,6 +53,9 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import api from '../../services/api';
+import { useToast } from '../../composables/useToast';
+
+const toast = useToast();
 
 const logs = ref([]);
 const meta = ref({ current_page: 1, last_page: 1 });
@@ -73,7 +76,7 @@ const fetchLog = async () => {
     const r = await api.get('/admin/activity-log', { params });
     logs.value = r.data.data || [];
     meta.value = r.data.meta || { current_page: 1, last_page: 1 };
-  } catch (e) { console.error(e); }
+  } catch (e) { toast.error('Failed to load activity log'); }
 };
 onMounted(fetchLog);
 </script>

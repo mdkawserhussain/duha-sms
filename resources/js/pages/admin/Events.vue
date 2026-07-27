@@ -60,6 +60,9 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import api from '../../services/api';
+import { useToast } from '../../composables/useToast';
+
+const toast = useToast();
 
 const events = ref([]);
 const showModal = ref(false);
@@ -67,7 +70,7 @@ const editing = ref(null);
 const saving = ref(false);
 const form = ref({ title: '', description: '', start_date: '', end_date: '', event_type: '' });
 
-const fetch = async () => { try { const r = await api.get('/admin/events'); events.value = r.data.data || r.data; } catch (e) { console.error(e); } };
+const fetch = async () => { try { const r = await api.get('/admin/events'); events.value = r.data.data || r.data; } catch (e) { toast.error('Failed to load events'); } };
 const openModal = (e = null) => {
   if (e) { editing.value = e.id; form.value = { title: e.title, description: e.description || '', start_date: e.start_date, end_date: e.end_date, event_type: e.event_type || '' }; }
   else { editing.value = null; form.value = { title: '', description: '', start_date: '', end_date: '', event_type: '' }; }
@@ -79,9 +82,9 @@ const save = async () => {
     if (editing.value) await api.put(`/admin/events/${editing.value}`, form.value);
     else await api.post('/admin/events', form.value);
     showModal.value = false; fetch();
-  } catch (e) { alert(e.response?.data?.message || 'Error saving'); }
+  } catch (e) { toast.error(e.response?.data?.message || 'Error saving'); }
   finally { saving.value = false; }
 };
-const deleteEvent = async (id) => { if (!confirm('Delete?')) return; try { await api.delete(`/admin/events/${id}`); fetch(); } catch (e) { alert(e.response?.data?.message || 'Error'); } };
+const deleteEvent = async (id) => { if (!confirm('Delete?')) return; try { await api.delete(`/admin/events/${id}`); fetch(); } catch (e) { toast.error(e.response?.data?.message || 'Error'); } };
 onMounted(fetch);
 </script>

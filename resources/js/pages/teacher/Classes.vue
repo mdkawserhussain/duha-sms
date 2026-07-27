@@ -21,7 +21,7 @@
           <thead><tr><th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Name</th><th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Email</th><th class="px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase">Gender</th></tr></thead>
           <tbody class="divide-y divide-gray-200">
             <tr v-for="s in students" :key="s.id">
-              <td class="px-4 py-3 text-sm font-medium text-gray-900">{{ s.first_name }} {{ s.last_name }}</td>
+              <td class="px-4 py-3 text-sm font-medium text-gray-900">{{ s.name }}</td>
               <td class="px-4 py-3 text-sm text-gray-500">{{ s.user?.email || '-' }}</td>
               <td class="px-4 py-3 text-sm text-gray-500 capitalize">{{ s.gender || '-' }}</td>
             </tr>
@@ -36,13 +36,15 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import api from '../../services/api';
+import { useToast } from '../../composables/useToast';
 
+const toast = useToast();
 const classes = ref([]);
 const selectedClass = ref(null);
 const students = ref([]);
 
 const fetchStudents = async (classId) => {
-  try { const r = await api.get(`/teacher/classes/${classId}/students`); students.value = r.data.data || r.data || []; } catch (e) { console.error(e); }
+  try { const r = await api.get(`/teacher/classes/${classId}/students`); students.value = r.data.data || r.data || []; } catch (e) { toast.error('Failed to load students'); }
 };
-onMounted(async () => { try { const r = await api.get('/teacher/classes'); classes.value = r.data.data || r.data || []; } catch (e) { console.error(e); } });
+onMounted(async () => { try { const r = await api.get('/teacher/classes'); classes.value = r.data.data || r.data || []; } catch (e) { toast.error('Failed to load classes'); } });
 </script>

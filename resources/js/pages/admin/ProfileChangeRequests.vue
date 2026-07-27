@@ -47,6 +47,9 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import api from '../../services/api';
+import { useToast } from '../../composables/useToast';
+
+const toast = useToast();
 
 const requests = ref([]);
 
@@ -56,8 +59,8 @@ const statusClass = (s) => ({
   'bg-red-100 text-red-800': s === 'rejected',
 });
 
-const fetch = async () => { try { const r = await api.get('/admin/profile-change-requests'); requests.value = r.data.data || r.data; } catch (e) { console.error(e); } };
-const approve = async (id) => { if (!confirm('Approve this change?')) return; try { await api.post(`/admin/profile-change-requests/${id}/approve`); fetch(); } catch (e) { alert(e.response?.data?.message || 'Error'); } };
-const reject = async (id) => { if (!confirm('Reject this change?')) return; try { await api.post(`/admin/profile-change-requests/${id}/reject`); fetch(); } catch (e) { alert(e.response?.data?.message || 'Error'); } };
+const fetch = async () => { try { const r = await api.get('/admin/profile-change-requests'); requests.value = r.data.data || r.data; } catch (e) { toast.error('Failed to load requests'); } };
+const approve = async (id) => { if (!confirm('Approve this change?')) return; try { await api.post(`/admin/profile-change-requests/${id}/approve`); fetch(); } catch (e) { toast.error(e.response?.data?.message || 'Error'); } };
+const reject = async (id) => { if (!confirm('Reject this change?')) return; try { await api.post(`/admin/profile-change-requests/${id}/reject`); fetch(); } catch (e) { toast.error(e.response?.data?.message || 'Error'); } };
 onMounted(fetch);
 </script>

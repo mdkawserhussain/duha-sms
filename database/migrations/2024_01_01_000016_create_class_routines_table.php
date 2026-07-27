@@ -11,7 +11,7 @@ return new class extends Migration
         Schema::create('class_routines', function (Blueprint $table) {
             $table->id();
             $table->foreignId('class_id')->constrained('classes')->cascadeOnDelete();
-            $table->tinyInteger('day_of_week');
+            $table->string('day_of_week', 10);
             $table->foreignId('subject_id')->constrained('subjects')->cascadeOnDelete();
             $table->time('start_time');
             $table->time('end_time');

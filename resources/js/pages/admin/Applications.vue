@@ -18,7 +18,7 @@
         </thead>
         <tbody class="bg-white divide-y divide-gray-200">
           <tr v-for="app in applications" :key="app.id">
-            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ app.first_name }} {{ app.last_name }}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ app.name }}</td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ app.guardian?.user?.name || '-' }}</td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ app.class?.name || '-' }}</td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ new Date(app.created_at).toLocaleDateString() }}</td>
@@ -45,6 +45,9 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import api from '../../services/api';
+import { useToast } from '../../composables/useToast';
+
+const toast = useToast();
 
 const applications = ref([]);
 
@@ -54,8 +57,8 @@ const statusClass = (s) => ({
   'bg-red-100 text-red-800': s === 'rejected',
 });
 
-const fetch = async () => { try { const r = await api.get('/admin/applications'); applications.value = r.data.data || r.data; } catch (e) { console.error(e); } };
-const approve = async (id) => { if (!confirm('Approve this application?')) return; try { await api.post(`/admin/applications/${id}/approve`); fetch(); } catch (e) { alert(e.response?.data?.message || 'Error'); } };
-const reject = async (id) => { if (!confirm('Reject this application?')) return; try { await api.post(`/admin/applications/${id}/reject`); fetch(); } catch (e) { alert(e.response?.data?.message || 'Error'); } };
+const fetch = async () => { try { const r = await api.get('/admin/applications'); applications.value = r.data.data || r.data; } catch (e) { toast.error('Failed to load applications'); } };
+const approve = async (id) => { if (!confirm('Approve this application?')) return; try { await api.post(`/admin/applications/${id}/approve`); fetch(); } catch (e) { toast.error(e.response?.data?.message || 'Error'); } };
+const reject = async (id) => { if (!confirm('Reject this application?')) return; try { await api.post(`/admin/applications/${id}/reject`); fetch(); } catch (e) { toast.error(e.response?.data?.message || 'Error'); } };
 onMounted(fetch);
 </script>

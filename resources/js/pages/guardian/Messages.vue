@@ -110,6 +110,9 @@
 <script setup>
 import { ref, onMounted, watch } from 'vue';
 import api from '../../services/api';
+import { useToast } from '../../composables/useToast';
+
+const toast = useToast();
 
 const messages = ref([]);
 const page = ref(1);
@@ -130,7 +133,7 @@ const fetchMessages = async () => {
     messages.value = r.data.data || [];
     lastPage.value = r.data.last_page || 1;
   } catch (e) {
-    console.error(e);
+    toast.error('Failed to load messages');
   }
 };
 
@@ -146,7 +149,7 @@ const sendMessage = async () => {
     showCompose.value = false;
     fetchMessages();
   } catch (e) {
-    alert(e.response?.data?.message || 'Error sending message');
+    toast.error(e.response?.data?.message || 'Error sending message');
   } finally {
     saving.value = false;
   }
@@ -159,7 +162,7 @@ const viewMessage = async (m) => {
       await api.post(`/guardian/messages/${m.id}/read`);
       m.read_at = new Date().toISOString();
     } catch (e) {
-      console.error(e);
+      toast.error('Failed to mark as read');
     }
   }
 };
@@ -170,7 +173,7 @@ const markRead = async (id) => {
     const m = messages.value.find(m => m.id === id);
     if (m) m.read_at = new Date().toISOString();
   } catch (e) {
-    alert(e.response?.data?.message || 'Error');
+    toast.error(e.response?.data?.message || 'Error');
   }
 };
 
@@ -180,7 +183,7 @@ const deleteMessage = async (id) => {
     await api.delete(`/guardian/messages/${id}`);
     fetchMessages();
   } catch (e) {
-    alert(e.response?.data?.message || 'Error deleting message');
+    toast.error(e.response?.data?.message || 'Error deleting message');
   }
 };
 

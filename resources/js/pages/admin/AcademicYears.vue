@@ -64,6 +64,9 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import api from '../../services/api';
+import { useToast } from '../../composables/useToast';
+
+const toast = useToast();
 
 const academicYears = ref([]);
 const showModal = ref(false);
@@ -75,7 +78,7 @@ const fetchYears = async () => {
   try {
     const r = await api.get('/admin/academic-years');
     academicYears.value = r.data.data || r.data;
-  } catch (e) { console.error(e); }
+  } catch (e) { toast.error('Failed to load academic years'); }
 };
 const openModal = (ay = null) => {
   if (ay) { editing.value = ay.id; form.value = { name: ay.name, start_date: ay.start_date, end_date: ay.end_date }; }
@@ -88,12 +91,12 @@ const save = async () => {
     if (editing.value) await api.put(`/admin/academic-years/${editing.value}`, form.value);
     else await api.post('/admin/academic-years', form.value);
     showModal.value = false; fetchYears();
-  } catch (e) { alert(e.response?.data?.message || 'Error saving'); }
+  } catch (e) { toast.error(e.response?.data?.message || 'Error saving'); }
   finally { saving.value = false; }
 };
 const setCurrent = async (id) => {
-  try { await api.post(`/admin/academic-years/${id}/set-current`); fetchYears(); } catch (e) { alert('Error setting current year'); }
+  try { await api.post(`/admin/academic-years/${id}/set-current`); fetchYears(); } catch (e) { toast.error('Error setting current year'); }
 };
-const deleteYear = async (id) => { if (!confirm('Delete this academic year?')) return; try { await api.delete(`/admin/academic-years/${id}`); fetchYears(); } catch (e) { alert(e.response?.data?.message || 'Error'); } };
+const deleteYear = async (id) => { if (!confirm('Delete this academic year?')) return; try { await api.delete(`/admin/academic-years/${id}`); fetchYears(); } catch (e) { toast.error(e.response?.data?.message || 'Error'); } };
 onMounted(() => { fetchYears(); });
 </script>

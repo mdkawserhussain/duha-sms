@@ -67,7 +67,7 @@
           </thead>
           <tbody class="bg-white divide-y divide-gray-200">
             <tr v-for="rec in records" :key="rec.id">
-              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ rec.student?.first_name }} {{ rec.student?.last_name }}</td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ rec.student?.name }}</td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ rec.fee_structure?.name }}</td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ formatCurrency(rec.amount) }}</td>
               <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ formatCurrency(rec.amount_paid) }}</td>
@@ -119,6 +119,9 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import api from '../../services/api';
+import { useToast } from '../../composables/useToast';
+
+const toast = useToast();
 
 const activeTab = ref('structures');
 const structures = ref([]);
@@ -132,8 +135,8 @@ const form = ref({ name: '', class_id: '', amount: '', term: '1st Term', due_dat
 
 const formatCurrency = (v) => v != null ? new Intl.NumberFormat('en-US', { style: 'currency', currency: 'NPR' }).format(v) : '-';
 
-const fetchClasses = async () => { try { const r = await api.get('/admin/classes', { params: { per_page: 100 } }); classes.value = r.data.data || r.data; } catch (e) { console.error(e); } };
-const fetchStructures = async () => { try { const r = await api.get('/admin/fee-structures'); structures.value = r.data.data || r.data; } catch (e) { console.error(e); } };
+const fetchClasses = async () => { try { const r = await api.get('/admin/classes', { params: { per_page: 100 } }); classes.value = r.data.data || r.data; } catch (e) { toast.error('Failed to load classes'); } };
+const fetchStructures = async () => { try { const r = await api.get('/admin/fee-structures'); structures.value = r.data.data || r.data; } catch (e) { toast.error('Failed to load fee structures'); } };
 const searchStudentFees = async () => {
   if (!searchStudent.value) { records.value = []; return; }
   try { const r = await api.get(`/admin/fees/student/${searchStudent.value}`); records.value = r.data.data || r.data || []; } catch (e) { records.value = []; }
@@ -149,13 +152,13 @@ const saveStructure = async () => {
     if (editing.value) await api.put(`/admin/fee-structures/${editing.value}`, form.value);
     else await api.post('/admin/fee-structures', form.value);
     showModal.value = false; fetchStructures();
-  } catch (e) { alert(e.response?.data?.message || 'Error saving'); }
+  } catch (e) { toast.error(e.response?.data?.message || 'Error saving'); }
   finally { saving.value = false; }
 };
-const deleteStructure = async (id) => { if (!confirm('Delete?')) return; try { await api.delete(`/admin/fee-structures/${id}`); fetchStructures(); } catch (e) { alert(e.response?.data?.message || 'Error'); } };
+const deleteStructure = async (id) => { if (!confirm('Delete?')) return; try { await api.delete(`/admin/fee-structures/${id}`); fetchStructures(); } catch (e) { toast.error(e.response?.data?.message || 'Error'); } };
 const markPaid = async (rec) => {
   if (!confirm('Mark this fee as paid?')) return;
-  try { await api.post(`/admin/fees/${rec.id}/pay`, { amount: rec.amount - rec.amount_paid }); searchStudentFees(); } catch (e) { alert(e.response?.data?.message || 'Error'); }
+  try { await api.post(`/admin/fees/${rec.id}/pay`, { amount: rec.amount - rec.amount_paid }); searchStudentFees(); } catch (e) { toast.error(e.response?.data?.message || 'Error'); }
 };
 onMounted(() => { fetchClasses(); fetchStructures(); });
 </script>

@@ -56,6 +56,9 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import api from '../../services/api';
+import { useToast } from '../../composables/useToast';
+
+const toast = useToast();
 
 const classes = ref([]);
 const diary = ref([]);
@@ -66,7 +69,7 @@ const saving = ref(false);
 const form = ref({ class_id: '', date: '', subject: '', content: '' });
 
 const fetchDiary = async () => {
-  try { const params = {}; if (filters.value.class_id) params.class_id = filters.value.class_id; const r = await api.get('/teacher/diary', { params }); diary.value = r.data.data || r.data || []; } catch (e) { console.error(e); }
+  try { const params = {}; if (filters.value.class_id) params.class_id = filters.value.class_id; const r = await api.get('/teacher/diary', { params }); diary.value = r.data.data || r.data || []; } catch (e) { toast.error('Failed to load diary'); }
 };
 const openModal = (entry = null) => {
   editing.value = entry;
@@ -79,12 +82,12 @@ const saveEntry = async () => {
     if (editing.value) { await api.put(`/teacher/diary/${editing.value.id}`, form.value); }
     else { await api.post('/teacher/diary', form.value); }
     showModal.value = false; fetchDiary();
-  } catch (e) { alert(e.response?.data?.message || 'Error'); }
+  } catch (e) { toast.error(e.response?.data?.message || 'Error'); }
   finally { saving.value = false; }
 };
-const deleteEntry = async (id) => { if (!confirm('Delete?')) return; try { await api.delete(`/teacher/diary/${id}`); fetchDiary(); } catch (e) { alert(e.response?.data?.message || 'Error'); } };
+const deleteEntry = async (id) => { if (!confirm('Delete?')) return; try { await api.delete(`/teacher/diary/${id}`); fetchDiary(); } catch (e) { toast.error(e.response?.data?.message || 'Error'); } };
 onMounted(async () => {
-  try { const r = await api.get('/teacher/classes'); classes.value = r.data.data || r.data || []; } catch (e) { console.error(e); }
+  try { const r = await api.get('/teacher/classes'); classes.value = r.data.data || r.data || []; } catch (e) { toast.error('Failed to load classes'); }
   fetchDiary();
 });
 </script>

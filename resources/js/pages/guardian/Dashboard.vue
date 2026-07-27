@@ -60,10 +60,10 @@
           <div v-for="child in children" :key="child.id" class="border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
             <div class="flex items-center mb-3">
               <div class="w-10 h-10 rounded-full bg-indigo-100 flex items-center justify-center">
-                <span class="text-indigo-600 font-semibold">{{ child.first_name?.charAt(0) }}{{ child.last_name?.charAt(0) }}</span>
+                <span class="text-indigo-600 font-semibold">{{ child.name?.charAt(0) }}</span>
               </div>
               <div class="ml-3">
-                <p class="font-medium text-gray-900">{{ child.first_name }} {{ child.last_name }}</p>
+                <p class="font-medium text-gray-900">{{ child.name }}</p>
                 <p class="text-sm text-gray-500">{{ child.class?.name || 'No Class' }}</p>
               </div>
             </div>
@@ -116,6 +116,9 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import api from '../../services/api';
+import { useToast } from '../../composables/useToast';
+
+const toast = useToast();
 
 const stats = ref({});
 const children = ref([]);
@@ -134,7 +137,7 @@ onMounted(async () => {
     announcements.value = r.data.announcements || [];
     events.value = r.data.events || [];
   } catch (e) {
-    console.error(e);
+    toast.error('Failed to load dashboard');
   }
 });
 </script>

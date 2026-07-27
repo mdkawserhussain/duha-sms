@@ -22,7 +22,7 @@
               <label class="block text-sm font-medium text-gray-700 mb-1">Child</label>
               <select v-model="form.student_id" required class="w-full rounded-md border-gray-300 text-sm">
                 <option value="">Select child...</option>
-                <option v-for="child in children" :key="child.id" :value="child.id">{{ child.first_name }} {{ child.last_name }}</option>
+                <option v-for="child in children" :key="child.id" :value="child.id">{{ child.name }}</option>
               </select>
             </div>
             <div>
@@ -62,7 +62,7 @@
           <tbody class="bg-white divide-y divide-gray-200">
             <tr v-for="req in requests" :key="req.id">
               <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 capitalize">{{ req.type?.replace('_', ' ') }}</td>
-              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ req.student?.first_name }} {{ req.student?.last_name }}</td>
+              <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ req.student?.name }}</td>
               <td class="px-6 py-4 text-sm text-gray-500">
                 <span class="line-through text-red-400">{{ req.current_value }}</span>
                 <span class="mx-1">&rarr;</span>
@@ -86,6 +86,9 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import api from '../../services/api';
+import { useToast } from '../../composables/useToast';
+
+const toast = useToast();
 
 const children = ref([]);
 const requests = ref([]);
@@ -110,7 +113,7 @@ const fetchChildren = async () => {
     const r = await api.get('/guardian/children');
     children.value = r.data.data || r.data || [];
   } catch (e) {
-    console.error(e);
+    toast.error('Failed to load children');
   }
 };
 
@@ -119,7 +122,7 @@ const fetchRequests = async () => {
     const r = await api.get('/guardian/profile-change-request');
     requests.value = r.data.data || r.data || [];
   } catch (e) {
-    console.error(e);
+    toast.error('Failed to load requests');
   }
 };
 
@@ -129,9 +132,9 @@ const submitRequest = async () => {
     await api.post('/guardian/profile-change-request', form.value);
     form.value = { type: '', student_id: '', current_value: '', requested_value: '', reason: '' };
     fetchRequests();
-    alert('Request submitted successfully!');
+    toast.success('Request submitted successfully!');
   } catch (e) {
-    alert(e.response?.data?.message || 'Error submitting request');
+    toast.error(e.response?.data?.message || 'Error submitting request');
   } finally {
     saving.value = false;
   }

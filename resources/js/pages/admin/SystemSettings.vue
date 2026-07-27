@@ -1,6 +1,9 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import api from '../../services/api'
+import { useToast } from '../../composables/useToast'
+
+const toast = useToast()
 
 const settings = ref([])
 const loading = ref(true)
@@ -63,7 +66,7 @@ const loadSettings = async () => {
         : { ...defaultSetting }
     })
   } catch (error) {
-    console.error('Failed to load settings:', error)
+    toast.error('Failed to load settings')
   } finally {
     loading.value = false
   }
@@ -83,7 +86,7 @@ const saveSettings = async () => {
     successMessage.value = 'Settings saved successfully!'
     setTimeout(() => { successMessage.value = '' }, 3000)
   } catch (error) {
-    console.error('Failed to save settings:', error)
+    toast.error('Failed to save settings')
   } finally {
     saving.value = false
   }

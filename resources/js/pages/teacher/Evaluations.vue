@@ -27,7 +27,7 @@
         </thead>
         <tbody class="bg-white divide-y divide-gray-200">
           <tr v-for="ev in evaluations" :key="ev.id">
-            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ ev.student?.first_name }} {{ ev.student?.last_name }}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ ev.student?.name }}</td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ ev.class?.name || '-' }}</td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ ev.subject }}</td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 capitalize">{{ ev.term }}</td>
@@ -53,7 +53,7 @@
         <form @submit.prevent="saveEvaluation">
           <div class="space-y-4">
             <div><label class="block text-sm font-medium text-gray-700 mb-1">Class</label><select v-model="form.class_id" required class="w-full rounded-md border-gray-300 text-sm"><option value="">Select class</option><option v-for="cls in classes" :key="cls.id" :value="cls.id">{{ cls.name }}</option></select></div>
-            <div><label class="block text-sm font-medium text-gray-700 mb-1">Student</label><select v-model="form.student_id" required class="w-full rounded-md border-gray-300 text-sm"><option value="">Select student</option><option v-for="s in classStudents" :key="s.id" :value="s.id">{{ s.first_name }} {{ s.last_name }}</option></select></div>
+            <div><label class="block text-sm font-medium text-gray-700 mb-1">Student</label><select v-model="form.student_id" required class="w-full rounded-md border-gray-300 text-sm"><option value="">Select student</option><option v-for="s in classStudents" :key="s.id" :value="s.id">{{ s.name }}</option></select></div>
             <div><label class="block text-sm font-medium text-gray-700 mb-1">Subject</label><input v-model="form.subject" required class="w-full rounded-md border-gray-300 text-sm" /></div>
             <div><label class="block text-sm font-medium text-gray-700 mb-1">Term</label><select v-model="form.term" required class="w-full rounded-md border-gray-300 text-sm"><option value="first">First</option><option value="second">Second</option><option value="third">Third</option></select></div>
             <div class="grid grid-cols-2 gap-4">
@@ -75,6 +75,9 @@
 <script setup>
 import { ref, onMounted, watch } from 'vue';
 import api from '../../services/api';
+import { useToast } from '../../composables/useToast';
+
+const toast = useToast();
 
 const classes = ref([]);
 const evaluations = ref([]);
@@ -86,11 +89,11 @@ const saving = ref(false);
 const form = ref({ class_id: '', student_id: '', subject: '', term: 'first', marks: '', grade: '', comments: '' });
 
 const fetchEvaluations = async () => {
-  try { const params = {}; if (filters.value.class_id) params.class_id = filters.value.class_id; if (filters.value.subject) params.subject = filters.value.subject; const r = await api.get('/teacher/evaluations', { params }); evaluations.value = r.data.data || r.data || []; } catch (e) { console.error(e); }
+  try { const params = {}; if (filters.value.class_id) params.class_id = filters.value.class_id; if (filters.value.subject) params.subject = filters.value.subject; const r = await api.get('/teacher/evaluations', { params }); evaluations.value = r.data.data || r.data || []; } catch (e) { toast.error('Failed to load evaluations'); }
 };
 const fetchClassStudents = async (classId) => {
   if (!classId) { classStudents.value = []; return; }
-  try { const r = await api.get(`/teacher/classes/${classId}/students`); classStudents.value = r.data.data || r.data || []; } catch (e) { console.error(e); }
+  try { const r = await api.get(`/teacher/classes/${classId}/students`); classStudents.value = r.data.data || r.data || []; } catch (e) { toast.error('Failed to load students'); }
 };
 watch(() => form.value.class_id, (v) => { fetchClassStudents(v); form.value.student_id = ''; });
 const openModal = (ev = null) => {
@@ -105,12 +108,12 @@ const saveEvaluation = async () => {
     if (editing.value) { await api.put(`/teacher/evaluations/${editing.value.id}`, form.value); }
     else { await api.post('/teacher/evaluations', form.value); }
     showModal.value = false; fetchEvaluations();
-  } catch (e) { alert(e.response?.data?.message || 'Error'); }
+  } catch (e) { toast.error(e.response?.data?.message || 'Error'); }
   finally { saving.value = false; }
 };
-const deleteEval = async (id) => { if (!confirm('Delete?')) return; try { await api.delete(`/teacher/evaluations/${id}`); fetchEvaluations(); } catch (e) { alert(e.response?.data?.message || 'Error'); } };
+const deleteEval = async (id) => { if (!confirm('Delete?')) return; try { await api.delete(`/teacher/evaluations/${id}`); fetchEvaluations(); } catch (e) { toast.error(e.response?.data?.message || 'Error'); } };
 onMounted(async () => {
-  try { const r = await api.get('/teacher/classes'); classes.value = r.data.data || r.data || []; } catch (e) { console.error(e); }
+  try { const r = await api.get('/teacher/classes'); classes.value = r.data.data || r.data || []; } catch (e) { toast.error('Failed to load classes'); }
   fetchEvaluations();
 });
 </script>

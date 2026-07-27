@@ -77,6 +77,9 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import api from '../../services/api';
+import { useToast } from '../../composables/useToast';
+
+const toast = useToast();
 
 const terms = ref([]);
 const academicYears = ref([]);
@@ -86,14 +89,14 @@ const saving = ref(false);
 const filters = ref({ academic_year_id: '' });
 const form = ref({ academic_year_id: '', name: '', start_date: '', end_date: '' });
 
-const fetchYears = async () => { try { const r = await api.get('/admin/academic-years', { params: { per_page: 100 } }); academicYears.value = r.data.data || r.data; } catch (e) { console.error(e); } };
+const fetchYears = async () => { try { const r = await api.get('/admin/academic-years', { params: { per_page: 100 } }); academicYears.value = r.data.data || r.data; } catch (e) { toast.error('Failed to load academic years'); } };
 const fetchTerms = async () => {
   try {
     const params = {};
     if (filters.value.academic_year_id) params.academic_year_id = filters.value.academic_year_id;
     const r = await api.get('/admin/terms', { params });
     terms.value = r.data.data || r.data;
-  } catch (e) { console.error(e); }
+  } catch (e) { toast.error('Failed to load terms'); }
 };
 const openModal = (t = null) => {
   if (t) { editing.value = t.id; form.value = { academic_year_id: t.academic_year_id, name: t.name, start_date: t.start_date, end_date: t.end_date }; }
@@ -106,12 +109,12 @@ const save = async () => {
     if (editing.value) await api.put(`/admin/terms/${editing.value}`, form.value);
     else await api.post('/admin/terms', form.value);
     showModal.value = false; fetchTerms();
-  } catch (e) { alert(e.response?.data?.message || 'Error saving'); }
+  } catch (e) { toast.error(e.response?.data?.message || 'Error saving'); }
   finally { saving.value = false; }
 };
 const setCurrent = async (id) => {
-  try { await api.post(`/admin/terms/${id}/set-current`); fetchTerms(); } catch (e) { alert('Error setting current term'); }
+  try { await api.post(`/admin/terms/${id}/set-current`); fetchTerms(); } catch (e) { toast.error('Error setting current term'); }
 };
-const deleteTerm = async (id) => { if (!confirm('Delete this term?')) return; try { await api.delete(`/admin/terms/${id}`); fetchTerms(); } catch (e) { alert(e.response?.data?.message || 'Error'); } };
+const deleteTerm = async (id) => { if (!confirm('Delete this term?')) return; try { await api.delete(`/admin/terms/${id}`); fetchTerms(); } catch (e) { toast.error(e.response?.data?.message || 'Error'); } };
 onMounted(() => { fetchYears(); fetchTerms(); });
 </script>

@@ -45,7 +45,9 @@
 <script setup>
 import { ref, onMounted, watch } from 'vue';
 import api from '../../services/api';
+import { useToast } from '../../composables/useToast';
 
+const toast = useToast();
 const routines = ref([]);
 const classes = ref([]);
 const day = ref('');
@@ -60,7 +62,7 @@ const fetchRoutines = async () => {
     const r = await api.get('/teacher/routine', { params });
     routines.value = r.data.data || r.data || [];
   } catch (e) {
-    console.error(e);
+    toast.error('Failed to load routines');
   }
 };
 
@@ -69,7 +71,7 @@ const fetchClasses = async () => {
     const r = await api.get('/teacher/classes');
     classes.value = r.data.data || r.data || [];
   } catch (e) {
-    console.error(e);
+    toast.error('Failed to load classes');
   }
 };
 

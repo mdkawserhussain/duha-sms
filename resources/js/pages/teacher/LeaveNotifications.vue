@@ -16,7 +16,7 @@
         </thead>
         <tbody class="bg-white divide-y divide-gray-200">
           <tr v-for="leave in leaves" :key="leave.id">
-            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ leave.student?.first_name }} {{ leave.student?.last_name }}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ leave.student?.name }}</td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ leave.class?.name || '-' }}</td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ leave.leave_date }}</td>
             <td class="px-6 py-4 text-sm text-gray-500 max-w-xs truncate">{{ leave.reason || '-' }}</td>
@@ -43,7 +43,9 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import api from '../../services/api';
+import { useToast } from '../../composables/useToast';
 
+const toast = useToast();
 const leaves = ref([]);
 
 const statusClass = (status) => {
@@ -60,7 +62,7 @@ const fetchLeaves = async () => {
     const r = await api.get('/teacher/leave-notifications');
     leaves.value = r.data.data || r.data || [];
   } catch (e) {
-    console.error(e);
+    toast.error('Failed to load leave notifications');
   }
 };
 
@@ -70,7 +72,7 @@ const approve = async (id) => {
     await api.post(`/teacher/leave-notifications/${id}/approve`);
     fetchLeaves();
   } catch (e) {
-    alert(e.response?.data?.message || 'Error approving leave');
+    toast.error(e.response?.data?.message || 'Error approving leave');
   }
 };
 
@@ -80,7 +82,7 @@ const reject = async (id) => {
     await api.post(`/teacher/leave-notifications/${id}/reject`);
     fetchLeaves();
   } catch (e) {
-    alert(e.response?.data?.message || 'Error rejecting leave');
+    toast.error(e.response?.data?.message || 'Error rejecting leave');
   }
 };
 

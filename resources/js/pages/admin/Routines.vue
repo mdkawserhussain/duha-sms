@@ -99,6 +99,9 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import api from '../../services/api';
+import { useToast } from '../../composables/useToast';
+
+const toast = useToast();
 
 const routines = ref([]);
 const classes = ref([]);
@@ -111,15 +114,15 @@ const filters = ref({ class_id: '', day: '', teacher_id: '' });
 const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 const form = ref({ class_id: '', day_of_week: 'Sunday', start_time: '', end_time: '', subject_id: '', teacher_id: '', room: '' });
 
-const fetchClasses = async () => { try { const r = await api.get('/admin/classes', { params: { per_page: 100 } }); classes.value = r.data.data || r.data; } catch (e) { console.error(e); } };
-const fetchTeachers = async () => { try { const r = await api.get('/admin/teachers', { params: { per_page: 200 } }); teachers.value = r.data.data || r.data; } catch (e) { console.error(e); } };
-const fetchSubjects = async () => { try { const r = await api.get('/admin/subjects', { params: { per_page: 200 } }); subjects.value = r.data.data || r.data; } catch (e) { console.error(e); } };
+const fetchClasses = async () => { try { const r = await api.get('/admin/classes', { params: { per_page: 100 } }); classes.value = r.data.data || r.data; } catch (e) { toast.error('Failed to load classes'); } };
+const fetchTeachers = async () => { try { const r = await api.get('/admin/teachers', { params: { per_page: 200 } }); teachers.value = r.data.data || r.data; } catch (e) { toast.error('Failed to load teachers'); } };
+const fetchSubjects = async () => { try { const r = await api.get('/admin/subjects', { params: { per_page: 200 } }); subjects.value = r.data.data || r.data; } catch (e) { toast.error('Failed to load subjects'); } };
 const fetchRoutines = async () => {
   try {
     const params = {}; Object.entries(filters.value).forEach(([k, v]) => { if (v) params[k] = v; });
     const r = await api.get('/admin/routines', { params });
     routines.value = r.data.data || r.data;
-  } catch (e) { console.error(e); }
+  } catch (e) { toast.error('Failed to load routines'); }
 };
 const openModal = (r = null) => {
   if (r) { editing.value = r.id; form.value = { class_id: r.class_id, day_of_week: r.day_of_week, start_time: r.start_time, end_time: r.end_time, subject_id: r.subject_id || '', teacher_id: r.teacher_id, room: r.room || '' }; }
@@ -132,9 +135,9 @@ const save = async () => {
     if (editing.value) await api.put(`/admin/routines/${editing.value}`, form.value);
     else await api.post('/admin/routines', form.value);
     showModal.value = false; fetchRoutines();
-  } catch (e) { alert(e.response?.data?.message || 'Error saving'); }
+  } catch (e) { toast.error(e.response?.data?.message || 'Error saving'); }
   finally { saving.value = false; }
 };
-const deleteRoutine = async (id) => { if (!confirm('Delete?')) return; try { await api.delete(`/admin/routines/${id}`); fetchRoutines(); } catch (e) { alert(e.response?.data?.message || 'Error'); } };
+const deleteRoutine = async (id) => { if (!confirm('Delete?')) return; try { await api.delete(`/admin/routines/${id}`); fetchRoutines(); } catch (e) { toast.error(e.response?.data?.message || 'Error'); } };
 onMounted(() => { fetchClasses(); fetchTeachers(); fetchSubjects(); fetchRoutines(); });
 </script>

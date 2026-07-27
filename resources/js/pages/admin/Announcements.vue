@@ -60,6 +60,9 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import api from '../../services/api';
+import { useToast } from '../../composables/useToast';
+
+const toast = useToast();
 
 const announcements = ref([]);
 const showModal = ref(false);
@@ -67,7 +70,7 @@ const editing = ref(null);
 const saving = ref(false);
 const form = ref({ title: '', content: '', target_audience: 'all' });
 
-const fetch = async () => { try { const r = await api.get('/admin/announcements'); announcements.value = r.data.data || r.data; } catch (e) { console.error(e); } };
+const fetch = async () => { try { const r = await api.get('/admin/announcements'); announcements.value = r.data.data || r.data; } catch (e) { toast.error('Failed to load announcements'); } };
 const openModal = (a = null) => {
   if (a) { editing.value = a.id; form.value = { title: a.title, content: a.content, target_audience: a.target_audience || 'all' }; }
   else { editing.value = null; form.value = { title: '', content: '', target_audience: 'all' }; }
@@ -79,10 +82,10 @@ const save = async () => {
     if (editing.value) await api.put(`/admin/announcements/${editing.value}`, form.value);
     else await api.post('/admin/announcements', form.value);
     showModal.value = false; fetch();
-  } catch (e) { alert(e.response?.data?.message || 'Error saving'); }
+  } catch (e) { toast.error(e.response?.data?.message || 'Error saving'); }
   finally { saving.value = false; }
 };
-const publish = async (id) => { try { await api.post(`/admin/announcements/${id}/publish`); fetch(); } catch (e) { alert(e.response?.data?.message || 'Error'); } };
-const deleteAnnouncement = async (id) => { if (!confirm('Delete?')) return; try { await api.delete(`/admin/announcements/${id}`); fetch(); } catch (e) { alert(e.response?.data?.message || 'Error'); } };
+const publish = async (id) => { try { await api.post(`/admin/announcements/${id}/publish`); fetch(); } catch (e) { toast.error(e.response?.data?.message || 'Error'); } };
+const deleteAnnouncement = async (id) => { if (!confirm('Delete?')) return; try { await api.delete(`/admin/announcements/${id}`); fetch(); } catch (e) { toast.error(e.response?.data?.message || 'Error'); } };
 onMounted(fetch);
 </script>

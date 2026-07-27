@@ -117,7 +117,9 @@
 import { ref, onMounted } from 'vue';
 import { useAuthStore } from '../stores/auth';
 import api from '../services/api';
+import { useToast } from '../composables/useToast';
 
+const toast = useToast();
 const authStore = useAuthStore();
 
 const stats = ref({
@@ -145,7 +147,7 @@ onMounted(async () => {
     };
     recentActivity.value = data.recent_activity || [];
   } catch (error) {
-    console.error('Failed to load dashboard:', error);
+    toast.error('Failed to load dashboard');
   }
 });
 </script>

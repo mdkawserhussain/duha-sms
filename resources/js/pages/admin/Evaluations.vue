@@ -45,7 +45,7 @@
         </thead>
         <tbody class="bg-white divide-y divide-gray-200">
           <tr v-for="ev in evaluations" :key="ev.id">
-            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ ev.student?.first_name }} {{ ev.student?.last_name }}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ ev.student?.name }}</td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ ev.student?.class?.name }}</td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ ev.subject }}</td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ ev.term }}</td>
@@ -80,7 +80,7 @@
               <label class="block text-sm font-medium text-gray-700 mb-1">Student</label>
               <select v-model="form.student_id" required class="w-full rounded-md border-gray-300 text-sm">
                 <option value="">Select student...</option>
-                <option v-for="s in students" :key="s.id" :value="s.id">{{ s.first_name }} {{ s.last_name }}</option>
+                <option v-for="s in students" :key="s.id" :value="s.id">{{ s.name }}</option>
               </select>
             </div>
             <div>
@@ -123,6 +123,9 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import api from '../../services/api';
+import { useToast } from '../../composables/useToast';
+
+const toast = useToast();
 
 const evaluations = ref([]);
 const classes = ref([]);
@@ -138,10 +141,10 @@ const defaultForm = { student_id: '', subject: '', term: '1st Term', marks_obtai
 const form = ref({ ...defaultForm });
 
 const fetchClasses = async () => {
-  try { const r = await api.get('/admin/classes', { params: { per_page: 100 } }); classes.value = r.data.data || r.data; } catch (e) { console.error(e); }
+  try { const r = await api.get('/admin/classes', { params: { per_page: 100 } }); classes.value = r.data.data || r.data; } catch (e) { toast.error('Failed to load classes'); }
 };
 const fetchStudents = async () => {
-  try { const r = await api.get('/admin/students', { params: { per_page: 200 } }); students.value = r.data.data || r.data; } catch (e) { console.error(e); }
+  try { const r = await api.get('/admin/students', { params: { per_page: 200 } }); students.value = r.data.data || r.data; } catch (e) { toast.error('Failed to load students'); }
 };
 const fetchEvaluations = async () => {
   try {
@@ -150,7 +153,7 @@ const fetchEvaluations = async () => {
     const r = await api.get('/admin/evaluations', { params });
     evaluations.value = r.data.data || [];
     meta.value = r.data.meta || { current_page: 1, last_page: 1 };
-  } catch (e) { console.error(e); }
+  } catch (e) { toast.error('Failed to load evaluations'); }
 };
 const openModal = (ev = null) => {
   if (ev) { editing.value = ev.id; form.value = { subject: ev.subject, term: ev.term, marks_obtained: ev.marks_obtained, total_marks: ev.total_marks, remarks: ev.remarks || '' }; }
@@ -163,12 +166,12 @@ const saveEvaluation = async () => {
     if (editing.value) { await api.put(`/admin/evaluations/${editing.value}`, form.value); }
     else { await api.post('/admin/evaluations', form.value); }
     showModal.value = false; fetchEvaluations();
-  } catch (e) { alert(e.response?.data?.message || 'Error saving'); }
+  } catch (e) { toast.error(e.response?.data?.message || 'Error saving'); }
   finally { saving.value = false; }
 };
 const deleteEvaluation = async (id) => {
   if (!confirm('Delete this evaluation?')) return;
-  try { await api.delete(`/admin/evaluations/${id}`); fetchEvaluations(); } catch (e) { alert(e.response?.data?.message || 'Error deleting'); }
+  try { await api.delete(`/admin/evaluations/${id}`); fetchEvaluations(); } catch (e) { toast.error(e.response?.data?.message || 'Error deleting'); }
 };
 onMounted(() => { fetchClasses(); fetchStudents(); fetchEvaluations(); });
 </script>

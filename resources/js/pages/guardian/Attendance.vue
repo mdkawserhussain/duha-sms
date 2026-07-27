@@ -5,7 +5,7 @@
       <div class="flex gap-2">
         <select v-model="studentId" @change="fetchAttendance" class="rounded-md border-gray-300 text-sm">
           <option value="">Select Child</option>
-          <option v-for="child in children" :key="child.id" :value="child.id">{{ child.first_name }} {{ child.last_name }}</option>
+          <option v-for="child in children" :key="child.id" :value="child.id">{{ child.name }}</option>
         </select>
         <input type="month" v-model="month" @change="fetchAttendance" class="rounded-md border-gray-300 text-sm">
       </div>
@@ -63,6 +63,9 @@
 import { ref, onMounted } from 'vue';
 import api from '../../services/api';
 import { useRoute } from 'vue-router';
+import { useToast } from '../../composables/useToast';
+
+const toast = useToast();
 
 const route = useRoute();
 const children = ref([]);
@@ -83,11 +86,11 @@ const fetchAttendance = async () => {
     attendance.value = r.data.data || r.data.attendance || [];
     summary.value = r.data.summary || {};
   } catch (e) {
-    console.error(e);
+    toast.error('Failed to load attendance');
   }
 };
 
-onMounted(async () => {
+const fetchChildren = async () => {
   try {
     const r = await api.get('/guardian/children');
     children.value = r.data.data || r.data || [];
@@ -96,7 +99,9 @@ onMounted(async () => {
       fetchAttendance();
     }
   } catch (e) {
-    console.error(e);
+    toast.error('Failed to load children');
   }
-});
+};
+
+onMounted(() => { fetchChildren(); });
 </script>

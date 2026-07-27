@@ -1,6 +1,9 @@
 <script setup>
 import { ref, onMounted, watch } from 'vue'
 import api from '../../services/api'
+import { useToast } from '../../composables/useToast'
+
+const toast = useToast()
 
 const students = ref([])
 const classes = ref([])
@@ -48,7 +51,7 @@ const loadStudents = async () => {
     total.value = response.data.total
     totalPages.value = response.data.last_page
   } catch (error) {
-    console.error('Failed to load students:', error)
+    toast.error('Failed to load students')
   } finally {
     loading.value = false
   }
@@ -59,7 +62,7 @@ const loadClasses = async () => {
     const response = await api.get('/admin/classes')
     classes.value = response.data.data
   } catch (error) {
-    console.error('Failed to load classes:', error)
+    toast.error('Failed to load classes')
   }
 }
 
@@ -68,7 +71,7 @@ const loadGuardians = async () => {
     const response = await api.get('/admin/guardians')
     guardians.value = response.data.data
   } catch (error) {
-    console.error('Failed to load guardians:', error)
+    toast.error('Failed to load guardians')
   }
 }
 
@@ -112,7 +115,7 @@ const deleteStudent = async (id) => {
     await api.delete(`/admin/students/${id}`)
     loadStudents()
   } catch (error) {
-    console.error('Failed to delete student:', error)
+    toast.error('Failed to delete student')
   }
 }
 
@@ -121,7 +124,7 @@ const toggleStatus = async (student) => {
     await api.post(`/admin/students/${student.id}/toggle-status`)
     loadStudents()
   } catch (error) {
-    console.error('Failed to toggle status:', error)
+    toast.error('Failed to toggle status')
   }
 }
 
@@ -140,7 +143,7 @@ const saveStudent = async () => {
     if (error.response?.status === 422) {
       formErrors.value = error.response.data.errors
     } else {
-      console.error('Failed to save student:', error)
+      toast.error('Failed to save student')
     }
   } finally {
     saving.value = false
@@ -165,7 +168,7 @@ const transferStudentFn = async () => {
     showTransferModal.value = false
     loadStudents()
   } catch (error) {
-    alert(error.response?.data?.message || 'Transfer failed')
+    toast.error(error.response?.data?.message || 'Transfer failed')
   } finally {
     transferSaving.value = false
   }
@@ -184,7 +187,7 @@ const importStudents = async () => {
     document.getElementById('import-input').value = ''
     loadStudents()
   } catch (error) {
-    alert(error.response?.data?.message || 'Import failed')
+    toast.error(error.response?.data?.message || 'Import failed')
   } finally {
     importing.value = false
   }
@@ -202,7 +205,7 @@ const exportStudents = async () => {
     link.remove()
     window.URL.revokeObjectURL(url)
   } catch (error) {
-    console.error('Export failed:', error)
+    toast.error('Export failed')
   }
 }
 
@@ -366,11 +369,8 @@ onMounted(() => {
             >
               Next
             </button>
-          </div>
-        </div>
       </div>
     </div>
-
     <!-- Add/Edit Modal -->
     <div
       v-if="showAddModal"
@@ -379,13 +379,7 @@ onMounted(() => {
       role="dialog"
       aria-modal="true"
     >
-      <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-        <div
-          class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"
-          @click="showAddModal = false"
-        />
-
-        <div class="relative z-10 inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+      <div class="relative z-10 inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
           <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
             <h3 class="text-lg font-medium text-gray-900 mb-4">
               {{ editingStudent ? 'Edit Student' : 'Add Student' }}
@@ -499,23 +493,10 @@ onMounted(() => {
           </div>
         </div>
       </div>
-    </div>
 
     <!-- Transfer Modal -->
-    <div
-      v-if="showTransferModal"
-      class="fixed inset-0 z-50 overflow-y-auto"
-      aria-labelledby="transfer-modal-title"
-      role="dialog"
-      aria-modal="true"
-    >
-      <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-        <div
-          class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"
-          @click="showTransferModal = false"
-        />
-
-        <div class="relative z-10 inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+    <div v-if="showTransferModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50">
+        <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
           <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
             <h3 class="text-lg font-medium text-gray-900 mb-4">
               Transfer Student
@@ -568,7 +549,6 @@ onMounted(() => {
             </form>
           </div>
         </div>
-      </div>
     </div>
   </div>
 </template>

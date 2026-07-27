@@ -91,6 +91,9 @@
 <script setup>
 import { ref, onMounted, watch } from 'vue';
 import api from '../../services/api';
+import { useToast } from '../../composables/useToast';
+
+const toast = useToast();
 
 const activeTab = ref('inbox');
 const messages = ref([]);
@@ -108,22 +111,22 @@ const fetchMessages = async () => {
     const r = await api.get('/admin/messages', { params });
     messages.value = r.data.data || [];
     meta.value = r.data.meta || { current_page: 1, last_page: 1 };
-  } catch (e) { console.error(e); }
+  } catch (e) { toast.error('Failed to load messages'); }
 };
-const fetchUnread = async () => { try { const r = await api.get('/admin/messages/unread-count'); unreadCount.value = r.data.count || 0; } catch (e) { console.error(e); } };
+const fetchUnread = async () => { try { const r = await api.get('/admin/messages/unread-count'); unreadCount.value = r.data.count || 0; } catch (e) { toast.error('Failed to load unread count'); } };
 watch(activeTab, () => { page.value = 1; fetchMessages(); });
 const openModal = () => { form.value = { recipient_role: 'teacher', recipient_id: '', subject: '', body: '' }; showCompose.value = true; };
 const sendMessage = async () => {
   saving.value = true;
-  try { await api.post('/admin/messages', form.value); showCompose.value = false; fetchMessages(); fetchUnread(); } catch (e) { alert(e.response?.data?.message || 'Error'); }
+  try { await api.post('/admin/messages', form.value); showCompose.value = false; fetchMessages(); fetchUnread(); } catch (e) { toast.error(e.response?.data?.message || 'Error'); }
   finally { saving.value = false; }
 };
 const viewMessage = async (m) => {
   viewing.value = m;
   if (!m.is_read && activeTab.value === 'inbox') {
-    try { await api.post(`/admin/messages/${m.id}/read`); m.is_read = true; fetchUnread(); } catch (e) { console.error(e); }
+    try { await api.post(`/admin/messages/${m.id}/read`); m.is_read = true; fetchUnread(); } catch (e) { toast.error('Failed to mark as read'); }
   }
 };
-const deleteMessage = async (id) => { if (!confirm('Delete?')) return; try { await api.delete(`/admin/messages/${id}`); fetchMessages(); } catch (e) { alert(e.response?.data?.message || 'Error'); } };
+const deleteMessage = async (id) => { if (!confirm('Delete?')) return; try { await api.delete(`/admin/messages/${id}`); fetchMessages(); } catch (e) { toast.error(e.response?.data?.message || 'Error'); } };
 onMounted(() => { fetchMessages(); fetchUnread(); });
 </script>

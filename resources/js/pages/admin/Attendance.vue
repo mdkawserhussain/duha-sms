@@ -48,7 +48,7 @@
         </thead>
         <tbody class="bg-white divide-y divide-gray-200">
           <tr v-for="record in attendance" :key="record.id">
-            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ record.student?.first_name }} {{ record.student?.last_name }}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ record.student?.name }}</td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ record.student?.class?.name }}</td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ record.date }}</td>
             <td class="px-6 py-4 whitespace-nowrap">
@@ -106,6 +106,9 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import api from '../../services/api';
+import { useToast } from '../../composables/useToast';
+
+const toast = useToast();
 
 const attendance = ref([]);
 const classes = ref([]);
@@ -126,9 +129,8 @@ const fetchClasses = async () => {
   try {
     const r = await api.get('/admin/classes', { params: { per_page: 100 } });
     classes.value = r.data.data || r.data;
-  } catch (e) { console.error(e); }
+  } catch (e) { toast.error('Failed to load classes'); }
 };
-
 const fetchAttendance = async () => {
   try {
     const params = { page: page.value, ...filters.value };
@@ -136,10 +138,9 @@ const fetchAttendance = async () => {
     const r = await api.get('/admin/attendance', { params });
     attendance.value = r.data.data || [];
     meta.value = r.data.meta || { current_page: 1, last_page: 1 };
-  } catch (e) { console.error(e); }
+  } catch (e) { toast.error('Failed to load attendance'); }
 };
-
-const openReportModal = async () => {
+const fetchReport = async () => {
   try {
     const params = {};
     if (filters.value.class_id) params.class_id = filters.value.class_id;
@@ -147,7 +148,7 @@ const openReportModal = async () => {
     const r = await api.get('/admin/attendance/report', { params });
     report.value = r.data;
     showReport.value = true;
-  } catch (e) { console.error(e); }
+  } catch (e) { toast.error('Failed to load report'); }
 };
 
 onMounted(() => { fetchClasses(); fetchAttendance(); });

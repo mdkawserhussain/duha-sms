@@ -20,7 +20,7 @@
       </div>
       <div v-if="takeForm.students.length" class="space-y-2">
         <div v-for="s in takeForm.students" :key="s.id" class="flex items-center gap-4 p-3 bg-gray-50 rounded-md">
-          <span class="flex-1 text-sm font-medium">{{ s.first_name }} {{ s.last_name }}</span>
+          <span class="flex-1 text-sm font-medium">{{ s.name }}</span>
           <label class="flex items-center gap-1"><input type="radio" :name="'att_' + s.id" value="present" v-model="s.status" class="text-indigo-600" /> Present</label>
           <label class="flex items-center gap-1"><input type="radio" :name="'att_' + s.id" value="absent" v-model="s.status" class="text-red-600" /> Absent</label>
           <label class="flex items-center gap-1"><input type="radio" :name="'att_' + s.id" value="late" v-model="s.status" class="text-yellow-600" /> Late</label>
@@ -43,7 +43,7 @@
         </thead>
         <tbody class="bg-white divide-y divide-gray-200">
           <tr v-for="a in attendance" :key="a.id">
-            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ a.student?.first_name }} {{ a.student?.last_name }}</td>
+            <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{{ a.student?.name }}</td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ a.class?.name || '-' }}</td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ a.date }}</td>
             <td class="px-6 py-4 whitespace-nowrap"><span :class="statusClass(a.status)" class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full capitalize">{{ a.status }}</span></td>
@@ -82,6 +82,9 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import api from '../../services/api';
+import { useToast } from '../../composables/useToast';
+
+const toast = useToast();
 
 const classes = ref([]);
 const attendance = ref([]);
@@ -95,25 +98,25 @@ const reportData = ref(null);
 const statusClass = (s) => ({ 'bg-green-100 text-green-800': s === 'present', 'bg-red-100 text-red-800': s === 'absent', 'bg-yellow-100 text-yellow-800': s === 'late' });
 
 const fetchAttendance = async () => {
-  try { const params = {}; if (filters.value.class_id) params.class_id = filters.value.class_id; if (filters.value.date) params.date = filters.value.date; const r = await api.get('/teacher/attendance', { params }); attendance.value = r.data.data || r.data || []; } catch (e) { console.error(e); }
+  try { const params = {}; if (filters.value.class_id) params.class_id = filters.value.class_id; if (filters.value.date) params.date = filters.value.date; const r = await api.get('/teacher/attendance', { params }); attendance.value = r.data.data || r.data || []; } catch (e) { toast.error('Failed to load attendance'); }
 };
 const fetchClassStudents = async () => {
   if (!takeForm.value.class_id) { takeForm.value.students = []; return; }
-  try { const r = await api.get(`/teacher/classes/${takeForm.value.class_id}/students`); takeForm.value.students = (r.data.data || r.data || []).map(s => ({ ...s, status: 'present' })); } catch (e) { console.error(e); }
+  try { const r = await api.get(`/teacher/classes/${takeForm.value.class_id}/students`); takeForm.value.students = (r.data.data || r.data || []).map(s => ({ ...s, status: 'present' })); } catch (e) { toast.error('Failed to load students'); }
 };
 const submitAttendance = async () => {
   saving.value = true;
   try {
     await api.post('/teacher/attendance', { class_id: takeForm.value.class_id, date: takeForm.value.date, records: takeForm.value.students.map(s => ({ student_id: s.id, status: s.status })) });
     fetchAttendance();
-  } catch (e) { alert(e.response?.data?.message || 'Error'); }
+  } catch (e) { toast.error(e.response?.data?.message || 'Error'); }
   finally { saving.value = false; }
 };
 const fetchReport = async () => {
-  try { const r = await api.get('/teacher/attendance/report', { params: reportForm.value }); reportData.value = r.data; } catch (e) { console.error(e); }
+  try { const r = await api.get('/teacher/attendance/report', { params: reportForm.value }); reportData.value = r.data; } catch (e) { toast.error('Failed to load report'); }
 };
 onMounted(async () => {
-  try { const r = await api.get('/teacher/classes'); classes.value = r.data.data || r.data || []; } catch (e) { console.error(e); }
+  try { const r = await api.get('/teacher/classes'); classes.value = r.data.data || r.data || []; } catch (e) { toast.error('Failed to load classes'); }
   fetchAttendance();
 });
 </script>

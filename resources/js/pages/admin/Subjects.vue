@@ -69,6 +69,9 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import api from '../../services/api';
+import { useToast } from '../../composables/useToast';
+
+const toast = useToast();
 
 const subjects = ref([]);
 const classes = ref([]);
@@ -84,7 +87,7 @@ const debouncedFetch = () => {
   debounceTimer = setTimeout(fetchSubjects, 300);
 };
 
-const fetchClasses = async () => { try { const r = await api.get('/admin/classes', { params: { per_page: 100 } }); classes.value = r.data.data || r.data; } catch (e) { console.error(e); } };
+const fetchClasses = async () => { try { const r = await api.get('/admin/classes', { params: { per_page: 100 } }); classes.value = r.data.data || r.data; } catch (e) { toast.error('Failed to load classes'); } };
 const fetchSubjects = async () => {
   try {
     const params = {};
@@ -92,7 +95,7 @@ const fetchSubjects = async () => {
     if (filters.value.class_id) params.class_id = filters.value.class_id;
     const r = await api.get('/admin/subjects', { params });
     subjects.value = r.data.data || r.data;
-  } catch (e) { console.error(e); }
+  } catch (e) { toast.error('Failed to load subjects'); }
 };
 const openModal = (s = null) => {
   if (s) { editing.value = s.id; form.value = { name: s.name, code: s.code || '', class_id: s.class_id }; }
@@ -105,9 +108,9 @@ const save = async () => {
     if (editing.value) await api.put(`/admin/subjects/${editing.value}`, form.value);
     else await api.post('/admin/subjects', form.value);
     showModal.value = false; fetchSubjects();
-  } catch (e) { alert(e.response?.data?.message || 'Error saving'); }
+  } catch (e) { toast.error(e.response?.data?.message || 'Error saving'); }
   finally { saving.value = false; }
 };
-const deleteSubject = async (id) => { if (!confirm('Delete this subject?')) return; try { await api.delete(`/admin/subjects/${id}`); fetchSubjects(); } catch (e) { alert(e.response?.data?.message || 'Error'); } };
+const deleteSubject = async (id) => { if (!confirm('Delete this subject?')) return; try { await api.delete(`/admin/subjects/${id}`); fetchSubjects(); } catch (e) { toast.error(e.response?.data?.message || 'Error'); } };
 onMounted(() => { fetchClasses(); fetchSubjects(); });
 </script>

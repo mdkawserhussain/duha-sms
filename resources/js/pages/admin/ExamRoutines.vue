@@ -72,6 +72,9 @@
 <script setup>
 import { ref, onMounted } from 'vue';
 import api from '../../services/api';
+import { useToast } from '../../composables/useToast';
+
+const toast = useToast();
 
 const examRoutines = ref([]);
 const classes = ref([]);
@@ -81,9 +84,9 @@ const editing = ref(null);
 const saving = ref(false);
 const form = ref({ exam_name: '', class_id: '', subject_id: '', exam_date: '', start_time: '', end_time: '', room: '' });
 
-const fetchClasses = async () => { try { const r = await api.get('/admin/classes', { params: { per_page: 100 } }); classes.value = r.data.data || r.data; } catch (e) { console.error(e); } };
-const fetchSubjects = async () => { try { const r = await api.get('/admin/subjects', { params: { per_page: 200 } }); subjects.value = r.data.data || r.data; } catch (e) { console.error(e); } };
-const fetch = async () => { try { const r = await api.get('/admin/exam-routines'); examRoutines.value = r.data.data || r.data; } catch (e) { console.error(e); } };
+const fetchClasses = async () => { try { const r = await api.get('/admin/classes', { params: { per_page: 100 } }); classes.value = r.data.data || r.data; } catch (e) { toast.error('Failed to load classes'); } };
+const fetchSubjects = async () => { try { const r = await api.get('/admin/subjects', { params: { per_page: 200 } }); subjects.value = r.data.data || r.data; } catch (e) { toast.error('Failed to load subjects'); } };
+const fetch = async () => { try { const r = await api.get('/admin/exam-routines'); examRoutines.value = r.data.data || r.data; } catch (e) { toast.error('Failed to load exam routines'); } };
 const openModal = (er = null) => {
   if (er) { editing.value = er.id; form.value = { exam_name: er.exam_name || '', class_id: er.class_id, subject_id: er.subject_id || '', exam_date: er.exam_date, start_time: er.start_time, end_time: er.end_time, room: er.room || '' }; }
   else { editing.value = null; form.value = { exam_name: '', class_id: '', subject_id: '', exam_date: '', start_time: '', end_time: '', room: '' }; }
@@ -95,9 +98,9 @@ const save = async () => {
     if (editing.value) await api.put(`/admin/exam-routines/${editing.value}`, form.value);
     else await api.post('/admin/exam-routines', form.value);
     showModal.value = false; fetch();
-  } catch (e) { alert(e.response?.data?.message || 'Error saving'); }
+  } catch (e) { toast.error(e.response?.data?.message || 'Error saving'); }
   finally { saving.value = false; }
 };
-const deleteExamRoutine = async (id) => { if (!confirm('Delete?')) return; try { await api.delete(`/admin/exam-routines/${id}`); fetch(); } catch (e) { alert(e.response?.data?.message || 'Error'); } };
+const deleteExamRoutine = async (id) => { if (!confirm('Delete?')) return; try { await api.delete(`/admin/exam-routines/${id}`); fetch(); } catch (e) { toast.error(e.response?.data?.message || 'Error'); } };
 onMounted(() => { fetchClasses(); fetchSubjects(); fetch(); });
 </script>

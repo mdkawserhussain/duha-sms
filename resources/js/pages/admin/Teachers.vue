@@ -1,6 +1,9 @@
 <script setup>
 import { ref, onMounted, watch } from 'vue'
 import api from '../../services/api'
+import { useToast } from '../../composables/useToast'
+
+const toast = useToast()
 
 const teachers = ref([])
 const loading = ref(true)
@@ -36,7 +39,7 @@ const loadTeachers = async () => {
     total.value = response.data.total
     totalPages.value = response.data.last_page
   } catch (error) {
-    console.error('Failed to load teachers:', error)
+    toast.error('Failed to load teachers')
   } finally {
     loading.value = false
   }
@@ -74,7 +77,7 @@ const deleteTeacher = async (id) => {
     await api.delete(`/admin/teachers/${id}`)
     loadTeachers()
   } catch (error) {
-    console.error('Failed to delete teacher:', error)
+    toast.error('Failed to delete teacher')
   }
 }
 
@@ -83,7 +86,7 @@ const toggleStatus = async (teacher) => {
     await api.post(`/admin/teachers/${teacher.id}/toggle-status`)
     loadTeachers()
   } catch (error) {
-    console.error('Failed to toggle status:', error)
+    toast.error('Failed to toggle status')
   }
 }
 
@@ -107,7 +110,7 @@ const saveTeacher = async () => {
     if (error.response?.status === 422) {
       formErrors.value = error.response.data.errors
     } else {
-      console.error('Failed to save teacher:', error)
+      toast.error('Failed to save teacher')
     }
   } finally {
     saving.value = false
@@ -226,25 +229,10 @@ onMounted(loadTeachers)
             >
               Next
             </button>
-          </div>
-        </div>
       </div>
     </div>
-
     <!-- Add/Edit Modal -->
-    <div
-      v-if="showAddModal"
-      class="fixed inset-0 z-50 overflow-y-auto"
-      aria-labelledby="modal-title"
-      role="dialog"
-      aria-modal="true"
-    >
-      <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-        <div
-          class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"
-          @click="showAddModal = false"
-        />
-
+    <div v-if="showAddModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center z-50">
         <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
           <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
             <h3 class="text-lg font-medium text-gray-900 mb-4">

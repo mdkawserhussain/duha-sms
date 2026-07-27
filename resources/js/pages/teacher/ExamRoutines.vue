@@ -1,6 +1,9 @@
 <script setup>
 import { ref, onMounted, watch } from 'vue'
 import api from '../../services/api'
+import { useToast } from '../../composables/useToast'
+
+const toast = useToast()
 
 const examRoutines = ref([])
 const classes = ref([])
@@ -40,7 +43,7 @@ const loadExamRoutines = async () => {
     total.value = response.data.total
     totalPages.value = response.data.last_page
   } catch (error) {
-    console.error('Failed to load exam routines:', error)
+    toast.error('Failed to load exam routines')
   } finally {
     loading.value = false
   }
@@ -51,7 +54,7 @@ const loadClasses = async () => {
     const response = await api.get('/teacher/classes')
     classes.value = response.data.data
   } catch (error) {
-    console.error('Failed to load classes:', error)
+    toast.error('Failed to load classes')
   }
 }
 
@@ -60,7 +63,7 @@ const loadSubjects = async () => {
     const response = await api.get('/admin/subjects')
     subjects.value = response.data.data
   } catch (error) {
-    console.error('Failed to load subjects:', error)
+    toast.error('Failed to load subjects')
   }
 }
 
@@ -100,7 +103,7 @@ const deleteRoutine = async (id) => {
     await api.delete(`/teacher/exam-routines/${id}`)
     loadExamRoutines()
   } catch (error) {
-    console.error('Failed to delete exam routine:', error)
+    toast.error('Failed to delete exam routine')
   }
 }
 
@@ -119,7 +122,7 @@ const saveRoutine = async () => {
     if (error.response?.status === 422) {
       formErrors.value = error.response.data.errors
     } else {
-      alert(error.response?.data?.message || 'Failed to save exam routine')
+      toast.error(error.response?.data?.message || 'Failed to save exam routine')
     }
   } finally {
     saving.value = false
@@ -239,11 +242,8 @@ onMounted(() => {
             >
               Next
             </button>
-          </div>
-        </div>
       </div>
     </div>
-
     <!-- Add/Edit Modal -->
     <div
       v-if="showAddModal"
@@ -252,13 +252,7 @@ onMounted(() => {
       role="dialog"
       aria-modal="true"
     >
-      <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-        <div
-          class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"
-          @click="showAddModal = false"
-        />
-
-        <div class="relative z-10 inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+      <div class="relative z-10 inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
           <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
             <h3 class="text-lg font-medium text-gray-900 mb-4">
               {{ editingRoutine ? 'Edit Exam Routine' : 'Add Exam Routine' }}
